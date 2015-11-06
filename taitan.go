@@ -4,25 +4,23 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/russross/blackfriday"
-	"golang.org/x/net/html"
+	"github.com/datasektionen/taitan/pages"
 )
 
 var (
-	debug bool
-	info  bool
+	debug     bool                       // Show debug level messages.
+	info      bool                       // Show info level messages.
+	responses = map[string]*pages.Resp{} // Our parsed responses.
 )
 
 func init() {
-	flag.BoolVar(&debug, "vv", false, "Give me debug")
-	flag.BoolVar(&info, "v", false, "Give me info")
+	flag.BoolVar(&debug, "vv", false, "Print debug messages.")
+	flag.BoolVar(&info, "v", false, "Print info messages.")
 	flag.Usage = usage
 	flag.Parse()
 }
@@ -33,9 +31,7 @@ func usage() {
 	os.Exit(1)
 }
 
-// Pages maps slugs to responses.
-var pages = map[string]*Resp{}
-
+// setVerbosity sets the amount of messages printed.
 func setVerbosity() {
 	if debug {
 		log.SetLevel(log.DebugLevel)
@@ -65,12 +61,14 @@ func main() {
 	// Our root to read in markdown files.
 	root := flag.Arg(0)
 	log.WithField("Root", root).Info("Our root directory")
+
 	// We'll parse and store the responses ahead of time.
-	err := loadRoot(root)
+	var err error
+	responses, err = pages.Load(root)
 	if err != nil {
 		log.Fatalf("loadRoot: unexpected error: %#v\n", err)
 	}
-	log.WithField("Pages", pages).Debug("The parsed pages")
+	log.WithField("Resps", responses).Debug("The parsed responses")
 
 	log.Info("Starting server.")
 	log.Info("Listening on port: ", port)
@@ -85,161 +83,6 @@ func main() {
 	}
 }
 
-func loadRoot(root string) (err error) {
-	var dirs []string
-	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
-		// We only search for article directories.
-		if !fi.IsDir() {
-			return nil
-		}
-		dirs = append(dirs, path)
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return parseDirs(dirs)
-}
-
-func stripRoot(dir string) string {
-	i := strings.IndexRune(dir, '/')
-	if i == -1 {
-		return "/"
-	}
-	return dir[i:]
-}
-
-func parseDirs(dirs []string) (err error) {
-	for _, dir := range dirs {
-		r, err := parseDir(dir)
-		if err != nil {
-			return err
-		}
-		pages[stripRoot(dir)] = r
-		log.WithFields(log.Fields{
-			"Resp": r,
-			"dir":  dir,
-		}).Debug("Our parsed response\n")
-	}
-	return nil
-}
-
-func readMarkdown(filename string) (string, error) {
-	buf, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return "", err
-	}
-	renderer := blackfriday.HtmlRenderer(blackfriday.HTML_USE_XHTML, "", "")
-	return string(blackfriday.MarkdownOptions(buf, renderer, blackfriday.Options{
-		Extensions: blackfriday.EXTENSION_AUTO_HEADER_IDS,
-	})), nil
-}
-
-func parseDir(dir string) (*Resp, error) {
-	log.WithField("dir", dir).Debug("Current directory")
-
-	bodyPath := filepath.Join(dir, "body.md")
-	sidebarPath := filepath.Join(dir, "sidebar.md")
-
-	body, err := readMarkdown(bodyPath)
-	if err != nil {
-		return nil, err
-	}
-	log.WithField("body", body).Debug("HTML of body.md")
-
-	sidebar, err := readMarkdown(sidebarPath)
-	if err != nil {
-		return nil, err
-	}
-	log.WithField("sidebar", sidebar).Debug("HTML of sidebar.md")
-	// Parse modified at
-	fi, err := os.Stat(bodyPath)
-	if err != nil {
-		return nil, err
-	}
-	anchs, err := anchors(body)
-	if err != nil {
-		return nil, err
-	}
-	title := ""
-	if len(anchs) > 0 {
-		title = anchs[0].Value
-	}
-	return &Resp{
-		Title:     title,
-		Slug:      filepath.Base(stripRoot(dir)),
-		UpdatedAt: fi.ModTime().Format(ISO8601DateTime),
-		Image:     "unimplemented",
-		Body:      body,
-		Sidebar:   sidebar,
-		Anchors:   anchs,
-	}, nil
-}
-
-const ISO8601DateTime = "2006-01-02T15:04:05Z"
-
-func anchors(body string) (anchs []Anchor, err error) {
-	node, err := html.Parse(strings.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	anchs = make([]Anchor, 0)
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "h1" {
-			log.WithField("attrs", n.Attr).Debug("Found potential anchor (<h1>)")
-			id := ""
-			for _, attr := range n.Attr {
-				if attr.Key == "id" {
-					id = attr.Val
-					break
-				}
-				return
-			}
-			val := ""
-			if n.FirstChild != nil {
-				val = plain(n)
-			}
-			anchs = append(anchs, Anchor{
-				ID:    id,
-				Value: val,
-			})
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-	}
-	f(node)
-	return anchs, nil
-}
-
-func plain(n *html.Node) string {
-	if n.Type == html.TextNode {
-		return n.Data
-	}
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		return plain(c)
-	}
-	return ""
-}
-
-// Resp is the response we serve for file queries.
-type Resp struct {
-	Title     string   `json:"title"`      // Human-readable title.
-	Slug      string   `json:"slug"`       // URL-slug.
-	UpdatedAt string   `json:"updated_at"` // Body update time.
-	Image     string   `json:"image"`      // Path/URL/Placeholder to image.
-	Body      string   `json:"body"`
-	Sidebar   string   `json:"sidebar"`
-	Anchors   []Anchor `json:"anchors"`
-}
-
-// Anchor is a html anchor tag with an id attribute and a value. Represents: <a id="Id">Value</a>
-type Anchor struct {
-	ID    string `json:"id"`    // Id of h2 element.
-	Value string `json:"value"` // Value inside the anchor tag.
-}
-
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
 	// Requested URL. We extract the path.
@@ -249,7 +92,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	clean := filepath.Clean(query)
 	log.WithField("clean", clean).Info("Sanitized path")
 
-	r, ok := pages[clean]
+	r, ok := responses[clean]
 	if !ok {
 		log.WithField("page", clean).Warn("Page doesn't exist")
 		res.WriteHeader(404)
@@ -263,5 +106,6 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Info("Serve the response.")
+	log.Debug("Response: %#v\n", string(buf))
 	fmt.Fprintln(res, string(buf))
 }
