@@ -134,7 +134,7 @@ func anchors(body string) (anchs []Anchor, err error) {
 	findAnchors = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "h1" {
 			// Append valid anchors.
-			anchor(n, anchs)
+			anchs = anchor(n, anchs)
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			findAnchors(c)
@@ -145,7 +145,7 @@ func anchors(body string) (anchs []Anchor, err error) {
 }
 
 // anchor appends valid anchors to anchs.
-func anchor(n *html.Node, anchs []Anchor) {
+func anchor(n *html.Node, anchs []Anchor) []Anchor {
 	log.WithField("attrs", n.Attr).Debug("Found potential anchor (<h1>)")
 	id := ""
 	for _, attr := range n.Attr {
@@ -153,13 +153,13 @@ func anchor(n *html.Node, anchs []Anchor) {
 			id = attr.Val
 			break
 		}
-		return
+		return nil
 	}
 	val := ""
 	if n.FirstChild != nil {
 		val = plain(n)
 	}
-	anchs = append(anchs, Anchor{
+	return append(anchs, Anchor{
 		ID:    id,
 		Value: val,
 	})
