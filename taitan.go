@@ -112,6 +112,8 @@ func readMarkdown(filename string) (string, error) {
 }
 
 func parseDir(dir string) (*Resp, error) {
+	log.Println("[o] dir:", dir)
+
 	bodyPath := filepath.Join(dir, "body.md")
 	log.Println("[o] Body path:", bodyPath)
 
@@ -139,7 +141,7 @@ func parseDir(dir string) (*Resp, error) {
 	}
 	return &Resp{
 		Title:     "unimplemented",
-		Slug:      "unimplemented",
+		Slug:      filepath.Base(stripRoot(dir)),
 		UpdatedAt: fi.ModTime().Format(ISO8601DateTime),
 		Image:     "unimplemented",
 		Body:      body,
