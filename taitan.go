@@ -143,7 +143,9 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	clean := filepath.Clean(query)
 	log.WithField("clean", clean).Info("Sanitized path")
 
+	responses.Lock()
 	r, ok := responses.Resps[clean]
+	responses.Unlock()
 	if !ok {
 		log.WithField("page", clean).Warn("Page doesn't exist")
 		res.WriteHeader(404)
