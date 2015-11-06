@@ -82,6 +82,9 @@ func loadRoot(root string) (err error) {
 
 func stripRoot(dir string) string {
 	i := strings.IndexRune(dir, '/')
+	if i == -1 {
+		return "/"
+	}
 	return dir[i:]
 }
 
