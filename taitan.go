@@ -139,8 +139,12 @@ func parseDir(dir string) (*Resp, error) {
 	if err != nil {
 		return nil, err
 	}
+	title := ""
+	if len(anchs) > 0 {
+		title = anchs[0].Value
+	}
 	return &Resp{
-		Title:     "unimplemented",
+		Title:     title,
 		Slug:      filepath.Base(stripRoot(dir)),
 		UpdatedAt: fi.ModTime().Format(ISO8601DateTime),
 		Image:     "unimplemented",
@@ -170,9 +174,14 @@ func anchors(body string) (anchs []Anchor, err error) {
 				}
 				return
 			}
+			if n.FirstChild == nil {
+				log.Println("[!] Empty value in node with id:", id)
+				return
+			}
+			val := plain(n)
 			anchs = append(anchs, Anchor{
 				ID:    id,
-				Value: n.FirstChild.Data,
+				Value: val,
 			})
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -181,6 +190,16 @@ func anchors(body string) (anchs []Anchor, err error) {
 	}
 	f(node)
 	return anchs, nil
+}
+
+func plain(n *html.Node) string {
+	if n.Type == html.TextNode {
+		return n.Data
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		return plain(c)
+	}
+	return ""
 }
 
 // Resp is the response we serve for file queries.
