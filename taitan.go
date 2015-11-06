@@ -5,17 +5,24 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/russross/blackfriday"
 	"golang.org/x/net/html"
 )
 
+var (
+	debug bool
+	info  bool
+)
+
 func init() {
+	flag.BoolVar(&debug, "vv", false, "Give me debug")
+	flag.BoolVar(&info, "v", false, "Give me info")
 	flag.Usage = usage
 	flag.Parse()
 }
@@ -29,7 +36,21 @@ func usage() {
 // Pages maps slugs to responses.
 var pages = map[string]*Resp{}
 
+func setVerbosity() {
+	if debug {
+		log.SetLevel(log.DebugLevel)
+		return
+	}
+	if info {
+		log.SetLevel(log.InfoLevel)
+		return
+	}
+	log.SetLevel(log.WarnLevel)
+}
+
 func main() {
+	setVerbosity()
+
 	// We need a root folder.
 	if flag.NArg() < 1 {
 		usage()
@@ -38,21 +59,21 @@ func main() {
 	// Recieve port from heruko.
 	port := os.Getenv("PORT")
 	if port == "" {
-		log.Fatalln("[!] $PORT environmental variable is not set.")
+		log.Fatalln("$PORT environmental variable is not set.")
 	}
 
 	// Our root to read in markdown files.
 	root := flag.Arg(0)
-	log.Printf("[o] Root directory: `%s`\n", root)
+	log.WithField("Root", root).Info("Our root directory")
 	// We'll parse and store the responses ahead of time.
 	err := loadRoot(root)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("loadRoot: unexpected error: %#v\n", err)
 	}
-	log.Printf("[o] Pages: %#v\n", pages)
+	log.WithField("Pages", pages).Debug("The parsed pages")
 
-	log.Println("[o] Starting server.")
-	log.Printf("[o] Listening on port: %s\n", port)
+	log.Info("Starting server.")
+	log.Info("Listening on port: ", port)
 
 	// Our request handler.
 	http.HandleFunc("/", handler)
@@ -95,7 +116,10 @@ func parseDirs(dirs []string) (err error) {
 			return err
 		}
 		pages[stripRoot(dir)] = r
-		fmt.Printf("[o] Resp: %#v\n", r)
+		log.WithFields(log.Fields{
+			"Resp": r,
+			"dir":  dir,
+		}).Debug("Our parsed response\n")
 	}
 	return nil
 }
@@ -112,25 +136,23 @@ func readMarkdown(filename string) (string, error) {
 }
 
 func parseDir(dir string) (*Resp, error) {
-	log.Println("[o] dir:", dir)
+	log.WithField("dir", dir).Debug("Current directory")
 
 	bodyPath := filepath.Join(dir, "body.md")
-	log.Println("[o] Body path:", bodyPath)
-
 	sidebarPath := filepath.Join(dir, "sidebar.md")
-	log.Println("[o] Sidebar path:", sidebarPath)
 
 	body, err := readMarkdown(bodyPath)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[o] Body html: %#v\n", body)
+	log.WithField("body", body).Debug("HTML of body.md")
 
 	sidebar, err := readMarkdown(sidebarPath)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[o] Sidebar html: %#v\n", sidebar)
+	log.WithField("sidebar", sidebar).Debug("HTML of sidebar.md")
+	// Parse modified at
 	fi, err := os.Stat(bodyPath)
 	if err != nil {
 		return nil, err
@@ -165,7 +187,7 @@ func anchors(body string) (anchs []Anchor, err error) {
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "h1" {
-			log.Println("[o] Add anchor:", n)
+			log.WithField("attrs", n.Attr).Debug("Found potential anchor (<h1>)")
 			id := ""
 			for _, attr := range n.Attr {
 				if attr.Key == "id" {
@@ -174,11 +196,10 @@ func anchors(body string) (anchs []Anchor, err error) {
 				}
 				return
 			}
-			if n.FirstChild == nil {
-				log.Println("[!] Empty value in node with id:", id)
-				return
+			val := ""
+			if n.FirstChild != nil {
+				val = plain(n)
 			}
-			val := plain(n)
 			anchs = append(anchs, Anchor{
 				ID:    id,
 				Value: val,
@@ -223,24 +244,24 @@ type Anchor struct {
 func handler(res http.ResponseWriter, req *http.Request) {
 	// Requested URL. We extract the path.
 	query := req.URL.Path
-	log.Printf("[o] Got query: `%s`\n", query)
+	log.WithField("query", query).Info("Recieved query")
 
 	clean := filepath.Clean(query)
-	log.Printf("[o] Sanitized path: `%s`\n", clean)
+	log.WithField("clean", clean).Info("Sanitized path")
 
 	r, ok := pages[clean]
 	if !ok {
-		log.Printf("[!] Page doesn't exist: `%s`\n", clean)
+		log.WithField("page", clean).Warn("Page doesn't exist")
 		res.WriteHeader(404)
 		return
 	}
-	log.Println("[o] Marshal the response.")
+	log.Info("Marshaling the response.")
 	buf, err := json.Marshal(r)
 	if err != nil {
-		log.Println("[!] Unexpected error:", err)
+		log.Warnf("handler: unexpected error: %#v\n", err)
 		res.WriteHeader(500)
 		return
 	}
-	log.Println("[o] Serve the response.")
+	log.Info("Serve the response.")
 	fmt.Fprintln(res, string(buf))
 }
