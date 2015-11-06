@@ -19,22 +19,33 @@ GET /:path
 
 ```json
 {
-  "title": "unimplemented",
-  "slug": "unimplemented",
+  "title": "Om Oss",
+  "slug": "om-oss",
   "updated_at": "2015-11-06T02:04:58Z",
 
   "image": "unimplemented",
 
   "body": "<h1>...",
-  "sidebar": "<script>...",
+  "sidebar": "<ul>...",
   "anchors": [{"id":"id", "value":"asdf"}],
 }
+```
+
+## Installation & usage
+
+```bash
+$ go get -u github.com/datasektionen/taitan
+$ taitan -v site/
+INFO[0000] Our root directory                            Root=site/
+INFO[0000] Starting server.                             
+INFO[0000] Listening on port: 4000
+...
 ```
 
 ## API documentation
 
 http://godoc.org/github.com/datasektionen/taitan
-
+http://godoc.org/github.com/datasektionen/taitan/parse
 
 ## Public domain
 
