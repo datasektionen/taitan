@@ -35,6 +35,12 @@ func main() {
 		usage()
 	}
 
+	// Recieve port from heruko.
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatalln("[!] $PORT environmental variable is not set.")
+	}
+
 	// Our root to read in markdown files.
 	root := flag.Arg(0)
 	log.Printf("[o] Root directory: `%s`\n", root)
@@ -43,13 +49,8 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Printf("[o] Pages: %#v\n", pages)
+	log.Printf("[o] Pages: %#v\n", pages)
 
-	// Recieve port from heruko.
-	port := os.Getenv("PORT")
-	if port == "" {
-		log.Fatalln("[!] $PORT environmental variable is not set.")
-	}
 	log.Println("[o] Starting server.")
 	log.Printf("[o] Listening on port: %s\n", port)
 
