@@ -7,15 +7,18 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/datasektionen/taitan/pages"
+	"golang.org/x/exp/inotify"
 )
 
 var (
-	debug     bool                       // Show debug level messages.
-	info      bool                       // Show info level messages.
-	responses = map[string]*pages.Resp{} // Our parsed responses.
+	debug     bool   // Show debug level messages.
+	info      bool   // Show info level messages.
+	responses Atomic // Our parsed responses.
 )
 
 func init() {
@@ -44,6 +47,11 @@ func setVerbosity() {
 	log.SetLevel(log.WarnLevel)
 }
 
+type Atomic struct {
+	sync.Mutex
+	Resps map[string]*pages.Resp
+}
+
 func main() {
 	setVerbosity()
 
@@ -63,12 +71,13 @@ func main() {
 	log.WithField("Root", root).Info("Our root directory")
 
 	// We'll parse and store the responses ahead of time.
-	var err error
-	responses, err = pages.Load(root)
+	resps, err := pages.Load(root)
 	if err != nil {
 		log.Fatalf("loadRoot: unexpected error: %#v\n", err)
 	}
-	log.WithField("Resps", responses).Debug("The parsed responses")
+	log.WithField("Resps", resps).Debug("The parsed responses")
+	responses = Atomic{Resps: resps}
+	go watch(root)
 
 	log.Info("Starting server.")
 	log.Info("Listening on port: ", port)
@@ -83,6 +92,48 @@ func main() {
 	}
 }
 
+func watch(root string) {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	path := filepath.Join(wd, root)
+	watcher, err := inotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = watcher.AddWatch(path,
+		inotify.IN_CLOSE_WRITE|
+			inotify.IN_CREATE|
+			inotify.IN_DELETE|
+			inotify.IN_MODIFY|
+			inotify.IN_MOVED_FROM|
+			inotify.IN_MOVED_TO|
+			inotify.IN_MOVE)
+	if err != nil {
+		log.Fatal(err)
+	}
+	last := time.Now()
+	for {
+		select {
+		case ev := <-watcher.Event:
+			if time.Now().Sub(last) < 10*time.Second {
+				continue
+			}
+			log.Println("event:", ev)
+			last = time.Now()
+			responses.Lock()
+			responses.Resps, err = pages.Load(root)
+			if err != nil {
+				log.Error(err)
+			}
+			responses.Unlock()
+		case err := <-watcher.Error:
+			log.Warn("error:", err)
+		}
+	}
+}
+
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
 	// Requested URL. We extract the path.
@@ -92,7 +143,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	clean := filepath.Clean(query)
 	log.WithField("clean", clean).Info("Sanitized path")
 
-	r, ok := responses[clean]
+	r, ok := responses.Resps[clean]
 	if !ok {
 		log.WithField("page", clean).Warn("Page doesn't exist")
 		res.WriteHeader(404)
