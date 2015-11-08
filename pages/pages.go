@@ -11,6 +11,24 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Resp is the response we serve for file queries.
+type Resp struct {
+	Title     string   `json:"title"`      // Human-readable title.
+	Slug      string   `json:"slug"`       // URL-slug.
+	UpdatedAt string   `json:"updated_at"` // Body update time.
+	Image     string   `json:"image"`      // Path/URL/Placeholder to image.
+	Body      string   `json:"body"`
+	Sidebar   string   `json:"sidebar"`
+	Anchors   []Anchor `json:"anchors"`
+}
+
+// Anchor is a html anchor tag with an id attribute and a value. Represents: <a
+// id="Id">Value</a>
+type Anchor struct {
+	ID    string `json:"id"`    // Id of h2 element.
+	Value string `json:"value"` // Value inside the anchor tag.
+}
+
 // Load intializes a root directory and serves all sub-folders.
 func Load(root string) (pages map[string]*Resp, err error) {
 	var dirs []string
@@ -25,30 +43,26 @@ func Load(root string) (pages map[string]*Resp, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return parseDirs(dirs)
+	return parseDirs(root, dirs)
 }
 
 // stripRoot removes root level of a directory.
 // This is because when a user requests:
 // `/sektionen/om-oss` the actual path is: `root/sektionen/om-oss`
-func stripRoot(dir string) string {
-	i := strings.IndexRune(dir, '/')
-	if i == -1 {
-		return "/"
-	}
-	return dir[i:]
+func stripRoot(root string, dir string) string {
+	return strings.Replace(dir, root, "/", 1)
 }
 
 // parseDirs parses each directory into a response. Returns a map from requested
 // urls into responses.
-func parseDirs(dirs []string) (pages map[string]*Resp, err error) {
+func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
 	pages = map[string]*Resp{}
 	for _, dir := range dirs {
 		r, err := parseDir(dir)
 		if err != nil {
 			return nil, err
 		}
-		pages[stripRoot(dir)] = r
+		pages[stripRoot(root, dir)] = r
 		log.WithFields(log.Fields{
 			"Resp": r,
 			"dir":  dir,
@@ -113,7 +127,7 @@ func parseDir(dir string) (*Resp, error) {
 	const iso8601DateTime = "2006-01-02T15:04:05Z"
 	return &Resp{
 		Title:     title,
-		Slug:      filepath.Base(stripRoot(dir)),
+		Slug:      filepath.Base(dir),
 		UpdatedAt: fi.ModTime().Format(iso8601DateTime),
 		Image:     "unimplemented",
 		Body:      body,
@@ -174,22 +188,4 @@ func plain(n *html.Node) string {
 		return plain(c)
 	}
 	return ""
-}
-
-// Resp is the response we serve for file queries.
-type Resp struct {
-	Title     string   `json:"title"`      // Human-readable title.
-	Slug      string   `json:"slug"`       // URL-slug.
-	UpdatedAt string   `json:"updated_at"` // Body update time.
-	Image     string   `json:"image"`      // Path/URL/Placeholder to image.
-	Body      string   `json:"body"`
-	Sidebar   string   `json:"sidebar"`
-	Anchors   []Anchor `json:"anchors"`
-}
-
-// Anchor is a html anchor tag with an id attribute and a value. Represents: <a
-// id="Id">Value</a>
-type Anchor struct {
-	ID    string `json:"id"`    // Id of h2 element.
-	Value string `json:"value"` // Value inside the anchor tag.
 }
