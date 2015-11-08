@@ -6,27 +6,21 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/datasektionen/taitan/anchor"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/russross/blackfriday"
-	"golang.org/x/net/html"
 )
 
 // Resp is the response we serve for file queries.
 type Resp struct {
-	Title     string   `json:"title"`      // Human-readable title.
-	Slug      string   `json:"slug"`       // URL-slug.
-	UpdatedAt string   `json:"updated_at"` // Body update time.
-	Image     string   `json:"image"`      // Path/URL/Placeholder to image.
-	Body      string   `json:"body"`
-	Sidebar   string   `json:"sidebar"`
-	Anchors   []Anchor `json:"anchors"`
-}
-
-// Anchor is a html anchor tag with an id attribute and a value. Represents: <a
-// id="Id">Value</a>
-type Anchor struct {
-	ID    string `json:"id"`    // Id of h2 element.
-	Value string `json:"value"` // Value inside the anchor tag.
+	Title     string          `json:"title"`      // Human-readable title.
+	Slug      string          `json:"slug"`       // URL-slug.
+	UpdatedAt string          `json:"updated_at"` // Body update time.
+	Image     string          `json:"image"`      // Path/URL/Placeholder to image.
+	Body      string          `json:"body"`       // Main content of the page.
+	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
+	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
 }
 
 // Load intializes a root directory and serves all sub-folders.
@@ -115,7 +109,7 @@ func parseDir(dir string) (*Resp, error) {
 		return nil, err
 	}
 	// Parse anchors in the body.
-	anchs, err := anchors(body)
+	anchs, err := anchor.Anchors(body)
 	if err != nil {
 		return nil, err
 	}
@@ -134,60 +128,4 @@ func parseDir(dir string) (*Resp, error) {
 		Sidebar:   sidebar,
 		Anchors:   anchs,
 	}, nil
-}
-
-// anchors finds <h1> elements inside a HTML string to create a list of anchors.
-func anchors(body string) (anchs []Anchor, err error) {
-	node, err := html.Parse(strings.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	anchs = make([]Anchor, 0)
-	// Recursively find <h1> elements.
-	var findAnchors func(*html.Node)
-	findAnchors = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "h1" {
-			// Append valid anchors.
-			anchs = anchor(n, anchs)
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			findAnchors(c)
-		}
-	}
-	findAnchors(node)
-	return anchs, nil
-}
-
-// anchor appends valid anchors to anchs.
-func anchor(n *html.Node, anchs []Anchor) []Anchor {
-	log.WithField("attrs", n.Attr).Debug("Found potential anchor (<h1>)")
-	id := findAttr("id", n.Attr)
-	val := plain(n)
-	if val == "" && id == "" {
-		return anchs
-	}
-	return append(anchs, Anchor{
-		ID:    id,
-		Value: val,
-	})
-}
-
-func findAttr(key string, attrs []html.Attribute) string {
-	for _, attr := range attrs {
-		if attr.Key == "id" {
-			return attr.Val
-		}
-	}
-	return ""
-}
-
-// Find plain text value of a HTML tag.
-func plain(n *html.Node) string {
-	if n.Type == html.TextNode {
-		return n.Data
-	}
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		return plain(c)
-	}
-	return ""
 }

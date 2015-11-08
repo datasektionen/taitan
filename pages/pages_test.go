@@ -1,12 +1,8 @@
 package pages
 
 import (
-	"bytes"
-	"fmt"
 	"log"
 	"testing"
-
-	"golang.org/x/net/html"
 )
 
 var striptests = []struct {
@@ -28,67 +24,20 @@ func TestStripRoot(t *testing.T) {
 	}
 }
 
-var plaintests = []struct {
-	in  *html.Node
-	out string
+var toHTMLtests = []struct {
+	in, out string
 }{
-	{s2html("<b><b><b>plain</b></b></b>"), "plain"},
-	{s2html("<b><b></b></b>"), ""},
-	{s2html("asdf"), "asdf"},
+	{"test/body.md", "<h1 id=\"id-test\">Id test</h1>\n"},
 }
 
-func s2html(s string) *html.Node {
-	n, err := html.Parse(bytes.NewBuffer([]byte(s)))
-	if err != nil {
-		log.Fatalln(err)
-	}
-	// Ignore DOM, <html>, <head> and <body> from html.Parse.
-	return n.FirstChild.FirstChild.NextSibling.FirstChild
-}
-
-func TestPlain(t *testing.T) {
-	for _, tt := range plaintests {
-		got := plain(tt.in)
+func TestToHTML(t *testing.T) {
+	for _, tt := range toHTMLtests {
+		got, err := toHTML(tt.in)
+		if err != nil {
+			log.Fatalln(err)
+		}
 		if tt.out != got {
-			t.Errorf("plain(%#v) => %q, want %q", tt.in, got, tt.out)
-		}
-	}
-}
-
-var anchortests = []struct {
-	in  *html.Node
-	in2 []Anchor
-	out []Anchor
-}{
-	{s2html(`<h1 id="asdf"><b><b>plain</b></b></h1>`), []Anchor{}, []Anchor{{"asdf", "plain"}}},
-	{s2html(`<b><b></b></b>`), []Anchor{{"qwerty", "asdf"}}, []Anchor{{"qwerty", "asdf"}}},
-	{s2html(`asdf`), []Anchor{}, []Anchor{{"", "asdf"}}},
-}
-
-func TestAnchor(t *testing.T) {
-	for _, tt := range anchortests {
-		got := anchor(tt.in, tt.in2)
-		if fmt.Sprintf("%#v\n", got) != fmt.Sprintf("%#v\n", tt.out) {
-			t.Errorf("anchor(%v, []Anchor{}) => %q, want %q", tt.in, got, tt.out)
-		}
-	}
-}
-
-var findattrtests = []struct {
-	in  string
-	in2 []html.Attribute
-	out string
-}{
-	{"id", []html.Attribute{}, ""},
-	{"id", []html.Attribute{{Key: "id", Val: "asdf"}}, "asdf"},
-	{"id", []html.Attribute{{Key: "class", Val: "qwerty"}, {Key: "id", Val: "asdf"}}, "asdf"},
-}
-
-func TestFindAttr(t *testing.T) {
-	for _, tt := range findattrtests {
-		got := findAttr(tt.in, tt.in2)
-		if got != tt.out {
-			t.Errorf("findAttr(%v, %v) => %q, want %q", tt.in, tt.in2, got, tt.out)
+			t.Errorf("toHTML(%q) => %q, want %q", tt.in, got, tt.out)
 		}
 	}
 }
