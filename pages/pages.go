@@ -161,22 +161,24 @@ func anchors(body string) (anchs []Anchor, err error) {
 // anchor appends valid anchors to anchs.
 func anchor(n *html.Node, anchs []Anchor) []Anchor {
 	log.WithField("attrs", n.Attr).Debug("Found potential anchor (<h1>)")
-	id := ""
-	for _, attr := range n.Attr {
-		if attr.Key == "id" {
-			id = attr.Val
-			break
-		}
-		return nil
-	}
-	val := ""
-	if n.FirstChild != nil {
-		val = plain(n)
+	id := findAttr("id", n.Attr)
+	val := plain(n)
+	if val == "" && id == "" {
+		return anchs
 	}
 	return append(anchs, Anchor{
 		ID:    id,
 		Value: val,
 	})
+}
+
+func findAttr(key string, attrs []html.Attribute) string {
+	for _, attr := range attrs {
+		if attr.Key == "id" {
+			return attr.Val
+		}
+	}
+	return ""
 }
 
 // Find plain text value of a HTML tag.
