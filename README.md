@@ -5,6 +5,10 @@ subject to change. The documentation can be inaccurate.
 
 # taitan
 
+[![Build Status](https://travis-ci.org/datasektionen/taitan.svg?branch=master)](https://travis-ci.org/datasektionen/taitan)
+[![Coverage Status](https://img.shields.io/coveralls/datasektionen/taitan.svg)](https://coveralls.io/r/datasektionen/taitan?branch=master)
+[![GoDoc](https://godoc.org/github.com/datasektionen/taitan?status.svg)](https://godoc.org/github.com/datasektionen/taitan)
+
 *Taitan* is a RESTful markdown to HTML supplier of pages for [datasektionen/bawang](http://github.com/datasektionen/bawang).
 
 *Taitan(タイタン) is romaji for Titan.*

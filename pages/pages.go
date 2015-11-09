@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -26,6 +27,13 @@ type Resp struct {
 // Load intializes a root directory and serves all sub-folders.
 func Load(root string) (pages map[string]*Resp, err error) {
 	var dirs []string
+	fi, err := os.Stat(root)
+	if err != nil {
+		return nil, err
+	}
+	if !fi.IsDir() {
+		return nil, fmt.Errorf("supplied path is not a directory: %q", root)
+	}
 	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
 		// We only search for article directories.
 		if !fi.IsDir() {

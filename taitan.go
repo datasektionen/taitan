@@ -52,6 +52,19 @@ type Atomic struct {
 	Resps map[string]*pages.Resp
 }
 
+func validRoot(root string) {
+	fi, err := os.Stat(root)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Fatalf("Directory doesn't exist: %q", root)
+		}
+		log.Fatalln(err)
+	}
+	if !fi.IsDir() {
+		log.Fatalf("Supplied path is not a directory: %q", root)
+	}
+}
+
 func main() {
 	setVerbosity()
 
@@ -70,13 +83,19 @@ func main() {
 	root := flag.Arg(0)
 	log.WithField("Root", root).Info("Our root directory")
 
+	// Validate that the supplied path is a directory and that it exists.
+	validRoot(root)
+
 	// We'll parse and store the responses ahead of time.
 	resps, err := pages.Load(root)
 	if err != nil {
-		log.Fatalf("loadRoot: unexpected error: %#v\n", err)
+		log.Fatalf("pages.Load: unexpected error: %#v", err)
 	}
 	log.WithField("Resps", resps).Debug("The parsed responses")
 	responses = Atomic{Resps: resps}
+
+	// Watch the directory for any changes. If the directory has any changes we'll
+	// update our responses.
 	go watch(root)
 
 	log.Info("Starting server.")
