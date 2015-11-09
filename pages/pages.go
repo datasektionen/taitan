@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
