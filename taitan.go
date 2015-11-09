@@ -47,6 +47,7 @@ func setVerbosity() {
 	log.SetLevel(log.WarnLevel)
 }
 
+// Atomic responses.
 type Atomic struct {
 	sync.Mutex
 	Resps map[string]*pages.Resp
