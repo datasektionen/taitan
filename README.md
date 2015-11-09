@@ -15,7 +15,7 @@ subject to change. The documentation can be inaccurate.
 
 ## API
 
-Retrieve a markdown document
+Retrieve a markdown document.
 
 GET /:path
 
