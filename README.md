@@ -8,6 +8,7 @@ subject to change. The documentation can be inaccurate.
 [![Build Status](https://travis-ci.org/datasektionen/taitan.svg?branch=master)](https://travis-ci.org/datasektionen/taitan)
 [![Coverage Status](https://coveralls.io/repos/datasektionen/taitan/badge.svg?branch=master&service=github)](https://coveralls.io/github/datasektionen/taitan?branch=master)
 [![GoDoc](https://godoc.org/github.com/datasektionen/taitan?status.svg)](https://godoc.org/github.com/datasektionen/taitan)
+[![Go Report Card](http://goreportcard.com/badge/datasektionen/taitan)](http://goreportcard.com/report/datasektionen/taitan)
 
 *Taitan* is a RESTful markdown to HTML supplier of pages for [datasektionen/bawang](http://github.com/datasektionen/bawang).
 
