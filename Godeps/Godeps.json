@@ -1,0 +1,28 @@
+{
+	"ImportPath": "github.com/datasektionen/taitan",
+	"GoVersion": "go1.5.1",
+	"Deps": [
+		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.8.7-35-gfe6f2b0",
+			"Rev": "fe6f2b03125e4fcafb21406381010e363a072c80"
+		},
+		{
+			"ImportPath": "github.com/russross/blackfriday",
+			"Comment": "v1.3-32-g510be64",
+			"Rev": "510be64de022c25096c6f476b7b7c240a8eca1a5"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/sanitized_anchor_name",
+			"Rev": "10ef21a441db47d8b13ebcc5fd2310f636973c77"
+		},
+		{
+			"ImportPath": "golang.org/x/exp/inotify",
+			"Rev": "fa44da8ac9c0ab78f2210fdcbd971bb69e44750e"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "b4e17d61b15679caf2335da776c614169a1b4643"
+		}
+	]
+}
