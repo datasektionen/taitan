@@ -48,7 +48,7 @@ func Load(root string) (pages map[string]*Resp, err error) {
 // This is because when a user requests:
 // `/sektionen/om-oss` the actual path is: `root/sektionen/om-oss`
 func stripRoot(root string, dir string) string {
-	return strings.Replace(dir, root, "/", 1)
+	return filepath.Clean(strings.Replace(dir, root, "/", 1))
 }
 
 // parseDirs parses each directory into a response. Returns a map from requested
