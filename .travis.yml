@@ -6,7 +6,6 @@ notifications:
 env:
   global:
     - PATH=$HOME/gopath/bin:$PATH
-    - PORT=4000
 
 before_install:
   - go get golang.org/x/tools/cmd/cover
