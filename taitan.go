@@ -5,8 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +24,12 @@ var (
 	responses Atomic // Our parsed responses.
 )
 
+func usage() {
+	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] ROOT\n", os.Args[0])
+	flag.PrintDefaults()
+	os.Exit(1)
+}
+
 func init() {
 	flag.BoolVar(&debug, "vv", false, "Print debug messages.")
 	flag.BoolVar(&info, "v", false, "Print info messages.")
@@ -28,23 +37,76 @@ func init() {
 	flag.Parse()
 }
 
-func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] ROOT\n", os.Args[0])
-	flag.PrintDefaults()
-	os.Exit(1)
+func getEnv(env string) string {
+	e := os.Getenv(env)
+	if e == "" {
+		log.Fatalf("$%s environmental variable is not set.\n", env)
+	}
+	return e
+}
+
+func getRoot() string {
+	content := getEnv("CONTENT_URL")
+	u, err := url.Parse(content)
+	if err != nil {
+		log.Fatalln("getContent: ", err)
+	}
+
+	// https://<token>@github.com/username/repo.git
+	u.User = url.User(getEnv("TOKEN"))
+
+	base := filepath.Base(u.Path)
+	return strings.TrimSuffix(base, filepath.Ext(base))
+}
+
+func getContent() {
+	content := getEnv("CONTENT_URL")
+	u, err := url.Parse(content)
+	if err != nil {
+		log.Fatalln("getContent: ", err)
+	}
+
+	// https://<token>@github.com/username/repo.git
+	u.User = url.User(getEnv("TOKEN"))
+
+	root := getRoot()
+	if _, err = os.Stat(root); os.IsNotExist(err) {
+		log.Debugln("No root directory - cloning content url!")
+		cmd := exec.Command("git", "clone", u.String())
+		err = cmd.Start()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Debugln("Waiting for git clone to finish...")
+		err = cmd.Wait()
+		if err != nil {
+			log.Warnln("Cloned with error: %v\n", err)
+		}
+	} else {
+		log.Debugln("Found root directory - pulling updates!")
+		cmd := exec.Command("git", fmt.Sprintf("--git-dir=%s/.git", root), "pull")
+		err = cmd.Start()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Debugln("Waiting for git pull to finish...")
+		err = cmd.Wait()
+		if err != nil {
+			log.Warnf("Pulled with error: %v\n", err)
+		}
+	}
 }
 
 // setVerbosity sets the amount of messages printed.
 func setVerbosity() {
-	if debug {
+	switch {
+	case debug:
 		log.SetLevel(log.DebugLevel)
-		return
-	}
-	if info {
+	case info:
 		log.SetLevel(log.InfoLevel)
-		return
+	default:
+		log.SetLevel(log.WarnLevel)
 	}
-	log.SetLevel(log.WarnLevel)
 }
 
 // Atomic responses.
@@ -69,28 +131,25 @@ func validRoot(root string) {
 func main() {
 	setVerbosity()
 
-	// We need a root folder.
-	if flag.NArg() < 1 {
-		usage()
-	}
+	// Get port or die.
+	port := getEnv("PORT")
 
-	// Recieve port from heruko.
-	port := os.Getenv("PORT")
-	if port == "" {
-		log.Fatalln("$PORT environmental variable is not set.")
-	}
+	// Get content or die.
+	getContent()
+	go func() {
+		for {
+			time.Sleep(time.Second * 20)
+			getContent()
+		}
+	}()
 
-	// Our root to read in markdown files.
-	root := flag.Arg(0)
+	root := getRoot()
 	log.WithField("Root", root).Info("Our root directory")
-
-	// Validate that the supplied path is a directory and that it exists.
-	validRoot(root)
 
 	// We'll parse and store the responses ahead of time.
 	resps, err := pages.Load(root)
 	if err != nil {
-		log.Fatalf("pages.Load: unexpected error: %#v", err)
+		log.Fatalf("pages.Load: unexpected error: %s", err)
 	}
 	log.WithField("Resps", resps).Debug("The parsed responses")
 	responses = Atomic{Resps: resps}

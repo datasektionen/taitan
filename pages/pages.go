@@ -83,7 +83,7 @@ func toHTML(filename string) (string, error) {
 
 // parseDir creates a response for a directory.
 func parseDir(dir string) (*Resp, error) {
-	log.WithField("dir", dir).Debug("Current directory")
+	log.WithField("dir", dir).Debug("Parsing directory:")
 
 	// Our content files.
 	bodyPath := filepath.Join(dir, "body.md")
