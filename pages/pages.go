@@ -58,7 +58,8 @@ func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
 	for _, dir := range dirs {
 		r, err := parseDir(dir)
 		if err != nil {
-			return nil, err
+			log.Warnln(err)
+			return nil, nil
 		}
 		pages[stripRoot(root, dir)] = r
 		log.WithFields(log.Fields{
