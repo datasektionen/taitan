@@ -31,8 +31,9 @@ func Load(root string) (pages map[string]*Resp, err error) {
 		if !fi.IsDir() {
 			return nil
 		}
-		if strings.HasPrefix(fi.Name(), ".") {
-			return nil
+		// Ignore our .git folder.
+		if fi.IsDir() && fi.Name() == ".git" {
+			return filepath.SkipDir
 		}
 		dirs = append(dirs, path)
 		return nil
