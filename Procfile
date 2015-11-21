@@ -1,1 +1,1 @@
-web: datasektionen/taitan
+web: taitan
