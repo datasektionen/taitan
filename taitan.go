@@ -227,17 +227,18 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	responses.Unlock()
 	if !ok {
 		log.WithField("page", clean).Warn("Page doesn't exist")
-		res.WriteHeader(404)
+		res.WriteHeader(http.StatusNotFound)
 		return
 	}
 	log.Info("Marshaling the response.")
 	buf, err := json.Marshal(r)
 	if err != nil {
 		log.Warnf("handler: unexpected error: %#v\n", err)
-		res.WriteHeader(500)
+		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	log.Info("Serve the response.")
 	log.Debug("Response: %#v\n", string(buf))
-	fmt.Fprintln(res, string(buf))
+	res.Header().Set("Content-Type", "application/json")
+	res.Write(buf)
 }
