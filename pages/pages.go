@@ -8,6 +8,7 @@ import (
 
 	"github.com/datasektionen/taitan/anchor"
 
+	"github.com/BurntSushi/toml"
 	log "github.com/Sirupsen/logrus"
 	"github.com/russross/blackfriday"
 )
@@ -56,7 +57,7 @@ func stripRoot(root string, dir string) string {
 func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
 	pages = map[string]*Resp{}
 	for _, dir := range dirs {
-		r, err := parseDir(dir)
+		r, err := parseDir(root, dir)
 		if err != nil {
 			log.Warnln(err)
 			return nil, nil
@@ -87,12 +88,15 @@ func toHTML(filename string) (string, error) {
 }
 
 // parseDir creates a response for a directory.
-func parseDir(dir string) (*Resp, error) {
+func parseDir(root, dir string) (*Resp, error) {
 	log.WithField("dir", dir).Debug("Parsing directory:")
 
 	// Our content files.
-	bodyPath := filepath.Join(dir, "body.md")
-	sidebarPath := filepath.Join(dir, "sidebar.md")
+	var (
+		bodyPath    = filepath.Join(dir, "body.md")
+		sidebarPath = filepath.Join(dir, "sidebar.md")
+		metaPath    = filepath.Join(dir, "meta.toml")
+	)
 
 	// Parse markdown to HTML.
 	body, err := toHTML(bodyPath)
@@ -118,17 +122,22 @@ func parseDir(dir string) (*Resp, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Title of the page (first anchor value).
-	title := ""
-	if len(anchs) > 0 {
-		title = anchs[0].Value
+
+	// Parse meta data from a toml file.
+	var meta struct {
+		Image string
+		Title string
 	}
+	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
+		return nil, err
+	}
+
 	const iso8601DateTime = "2006-01-02T15:04:05Z"
 	return &Resp{
-		Title:     title,
-		Slug:      filepath.Base(dir),
+		Title:     meta.Title,
+		Slug:      filepath.Base(stripRoot(root, dir)),
 		UpdatedAt: fi.ModTime().Format(iso8601DateTime),
-		Image:     "unimplemented",
+		Image:     meta.Image,
 		Body:      body,
 		Sidebar:   sidebar,
 		Anchors:   anchs,
