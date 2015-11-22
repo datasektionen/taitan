@@ -8,7 +8,7 @@ import (
 var striptests = []struct {
 	in, in2, out string
 }{
-	{"test/", "test/sektionen/", "/sektionen/"},
+	{"test/", "test/sektionen/", "/sektionen"},
 	{"test", "test", "/"},
 	{"../test/", "../test/", "/"},
 	{"../test/", "../test/sektionen", "/sektionen"},
