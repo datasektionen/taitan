@@ -18,7 +18,7 @@ install:
   - go get ./...
 
 before_script:
-  - wget https://gist.github.com/mewmew/379014c9a2e6885e238d/raw/goclean.sh
+  - wget https://gist.githubusercontent.com/karlek/56595e7f313f8a74d66e/raw/
   - chmod +x goclean.sh
 
 script:
