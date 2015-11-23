@@ -69,31 +69,25 @@ func getContent() {
 
 	root := getRoot()
 	if _, err = os.Stat(root); os.IsNotExist(err) {
-		log.Infoln("No root directory - cloning content url!")
-		cmd := exec.Command("git", "clone", u.String())
-		err = cmd.Start()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Infoln("Waiting for git clone to finish...")
-		err = cmd.Wait()
-		if err != nil {
-			log.Warnln("Cloned with error: %v\n", err)
-		}
+		runGit("clone", []string{"clone", u.String()})
 	} else {
-		log.Infoln("Found root directory - pulling updates!")
-		cmd := exec.Command("git", fmt.Sprintf("--git-dir=%s/.git", root), "pull")
-		err = cmd.Start()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Infoln("Waiting for git pull to finish...")
-		err = cmd.Wait()
-		if err != nil {
-			log.Warnf("Pulled with error: %v\n", err)
-		}
-		log.Infoln("Git pull finished!")
+		runGit("pull", []string{fmt.Sprintf("--git-dir=%s/.git", root), "pull"})
 	}
+}
+
+func runGit(action string, args []string) {
+	log.Infof("Found root directory - %sing updates!", action)
+	cmd := exec.Command("git", args...)
+	err := cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Infof("Waiting for git %s to finish...", action)
+	err = cmd.Wait()
+	if err != nil {
+		log.Warnf("%sed with error: %v\n", action, err)
+	}
+	log.Infof("Git %s finished!", action)
 }
 
 // setVerbosity sets the amount of messages printed.
@@ -137,7 +131,6 @@ func main() {
 	getContent()
 
 	root := getRoot()
-	rootGlob = root
 	log.WithField("Root", root).Info("Our root directory")
 
 	// We'll parse and store the responses ahead of time.
@@ -161,8 +154,6 @@ func main() {
 	}
 }
 
-var rootGlob string
-
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
 	if req.Header.Get("X-Github-Event") == "push" {
@@ -172,7 +163,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		responses.Lock()
 		responses.Resps = map[string]*pages.Resp{}
 		log.WithField("Resps", responses.Resps).Infoln("lol")
-		responses.Resps, err = pages.Load(rootGlob)
+		responses.Resps, err = pages.Load(getRoot())
 		if err != nil {
 			log.Error(err)
 		}
