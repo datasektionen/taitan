@@ -157,6 +157,11 @@ func main() {
 
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
+	if req.URL.Path == "fuzzyfile" {
+		log.Warnln("Not implemented")
+		res.WriteHeader(http.StatusNotImplemented)
+		return
+	}
 	if req.Header.Get("X-Github-Event") == "push" {
 		var err error
 		log.Infoln("Push hook")
