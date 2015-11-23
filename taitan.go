@@ -171,12 +171,12 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		getContent()
 		responses.Lock()
 		responses.Resps = map[string]*pages.Resp{}
-		log.WithField("Resps", responses.Resps)
+		log.WithField("Resps", responses.Resps).Infoln("lol")
 		responses.Resps, err = pages.Load(rootGlob)
 		if err != nil {
 			log.Error(err)
 		}
-		log.WithField("Resps", responses.Resps)
+		log.WithField("Resps", responses.Resps).Infoln("lol")
 		responses.Unlock()
 		return
 	}
