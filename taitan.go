@@ -215,6 +215,9 @@ func watch(root string) {
 
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
+	if req.Header.Get("X-Github-Event") != "" {
+		log.Debugln("GITHUB EVENT - BO YAH - run get content here :D")
+	}
 	// Requested URL. We extract the path.
 	query := req.URL.Path
 	log.WithField("query", query).Info("Recieved query")
