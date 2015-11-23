@@ -11,11 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/datasektionen/taitan/pages"
-	"golang.org/x/exp/inotify"
 )
 
 var (
@@ -136,14 +134,9 @@ func main() {
 
 	// Get content or die.
 	getContent()
-	go func() {
-		for {
-			time.Sleep(time.Second * 20)
-			getContent()
-		}
-	}()
 
 	root := getRoot()
+	rootGlob = root
 	log.WithField("Root", root).Info("Our root directory")
 
 	// We'll parse and store the responses ahead of time.
@@ -153,10 +146,6 @@ func main() {
 	}
 	log.WithField("Resps", resps).Debug("The parsed responses")
 	responses = Atomic{Resps: resps}
-
-	// Watch the directory for any changes. If the directory has any changes we'll
-	// update our responses.
-	go watch(root)
 
 	log.Info("Starting server.")
 	log.Info("Listening on port: ", port)
@@ -171,52 +160,21 @@ func main() {
 	}
 }
 
-func watch(root string) {
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	path := filepath.Join(wd, root)
-	watcher, err := inotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = watcher.AddWatch(path,
-		inotify.IN_CLOSE_WRITE|
-			inotify.IN_CREATE|
-			inotify.IN_DELETE|
-			inotify.IN_MODIFY|
-			inotify.IN_MOVED_FROM|
-			inotify.IN_MOVED_TO|
-			inotify.IN_MOVE)
-	if err != nil {
-		log.Fatal(err)
-	}
-	last := time.Now()
-	for {
-		select {
-		case ev := <-watcher.Event:
-			if time.Now().Sub(last) < 10*time.Second {
-				continue
-			}
-			log.Println("event:", ev)
-			last = time.Now()
-			responses.Lock()
-			responses.Resps, err = pages.Load(root)
-			if err != nil {
-				log.Error(err)
-			}
-			responses.Unlock()
-		case err := <-watcher.Error:
-			log.Warn("error:", err)
-		}
-	}
-}
+var rootGlob string
 
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
 	if req.Header.Get("X-Github-Event") != "" {
-		log.Infoln("GITHUB EVENT - BO YAH - run get content here :D")
+		var err error
+		log.Infoln("Push hook")
+		log.Infoln(req.Header.Get("X-Github-Event"))
+		getContent()
+		responses.Lock()
+		responses.Resps, err = pages.Load(rootGlob)
+		if err != nil {
+			log.Error(err)
+		}
+		responses.Unlock()
 	}
 	// Requested URL. We extract the path.
 	query := req.URL.Path
