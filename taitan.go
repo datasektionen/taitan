@@ -92,6 +92,7 @@ func getContent() {
 		if err != nil {
 			log.Warnf("Pulled with error: %v\n", err)
 		}
+		log.Infoln("Git pull finished!")
 	}
 }
 
@@ -170,11 +171,14 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		getContent()
 		responses.Lock()
 		responses.Resps = map[string]*pages.Resp{}
+		log.WithField("Resps", responses.Resps)
 		responses.Resps, err = pages.Load(rootGlob)
 		if err != nil {
 			log.Error(err)
 		}
+		log.WithField("Resps", responses.Resps)
 		responses.Unlock()
+		return
 	}
 	// Requested URL. We extract the path.
 	query := req.URL.Path
