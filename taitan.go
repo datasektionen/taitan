@@ -71,7 +71,7 @@ func getContent() {
 	if _, err = os.Stat(root); os.IsNotExist(err) {
 		runGit("clone", []string{"clone", u.String()})
 	} else {
-		runGit("pull", []string{fmt.Sprintf("--git-dir=%s/.git", root), "pull"})
+		runGit("pull", []string{fmt.Sprintf("-C %s", root), "pull"})
 	}
 }
 
