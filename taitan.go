@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/datasektionen/taitan/fuzz"
 	"github.com/datasektionen/taitan/pages"
 )
 
@@ -157,9 +158,17 @@ func main() {
 
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "fuzzyfile" {
-		log.Warnln("Not implemented")
-		res.WriteHeader(http.StatusNotImplemented)
+	if req.URL.Path == "/fuzzyfile" {
+		log.Info("Fuzzyfile")
+		buf, err := json.Marshal(fuzz.NewFile(responses.Resps))
+		if err != nil {
+			log.Warnf("handler: unexpected error: %#v\n", err)
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		log.Debugf("Response: %#v\n", string(buf))
+		res.Header().Set("Content-Type", "application/json")
+		res.Write(buf)
 		return
 	}
 	if req.Header.Get("X-Github-Event") == "push" {
