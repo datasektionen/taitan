@@ -77,7 +77,7 @@ func getContent() {
 
 func runGit(action string, args []string) {
 	log.Infof("Found root directory - %sing updates!", action)
-	log.Infof("Commands %#v!", args)
+	log.Debugf("Commands %#v!", args)
 	cmd := exec.Command("git", args...)
 	err := cmd.Start()
 	if err != nil {
@@ -162,13 +162,10 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		log.Infoln("Push hook")
 		getContent()
 		responses.Lock()
-		responses.Resps = map[string]*pages.Resp{}
-		log.WithField("Resps", responses.Resps).Infoln("lol")
 		responses.Resps, err = pages.Load(getRoot())
 		if err != nil {
 			log.Error(err)
 		}
-		log.WithField("Resps", responses.Resps).Infoln("lol")
 		responses.Unlock()
 		return
 	}
@@ -195,7 +192,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Info("Serve the response.")
-	log.Debug("Response: %#v\n", string(buf))
+	log.Debugf("Response: %#v\n", string(buf))
 	res.Header().Set("Content-Type", "application/json")
 	res.Write(buf)
 }
