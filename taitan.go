@@ -164,12 +164,12 @@ var rootGlob string
 
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
-	if req.Header.Get("X-Github-Event") != "" {
+	if req.Header.Get("X-Github-Event") != "push" {
 		var err error
 		log.Infoln("Push hook")
-		log.Infoln(req.Header.Get("X-Github-Event"))
 		getContent()
 		responses.Lock()
+		responses.Resps = map[string]*pages.Resp{}
 		responses.Resps, err = pages.Load(rootGlob)
 		if err != nil {
 			log.Error(err)
