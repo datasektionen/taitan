@@ -69,25 +69,25 @@ func getContent() {
 
 	root := getRoot()
 	if _, err = os.Stat(root); os.IsNotExist(err) {
-		log.Debugln("No root directory - cloning content url!")
+		log.Infoln("No root directory - cloning content url!")
 		cmd := exec.Command("git", "clone", u.String())
 		err = cmd.Start()
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Debugln("Waiting for git clone to finish...")
+		log.Infoln("Waiting for git clone to finish...")
 		err = cmd.Wait()
 		if err != nil {
 			log.Warnln("Cloned with error: %v\n", err)
 		}
 	} else {
-		log.Debugln("Found root directory - pulling updates!")
+		log.Infoln("Found root directory - pulling updates!")
 		cmd := exec.Command("git", fmt.Sprintf("--git-dir=%s/.git", root), "pull")
 		err = cmd.Start()
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Debugln("Waiting for git pull to finish...")
+		log.Infoln("Waiting for git pull to finish...")
 		err = cmd.Wait()
 		if err != nil {
 			log.Warnf("Pulled with error: %v\n", err)
