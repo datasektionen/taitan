@@ -6,6 +6,10 @@ import (
 	"github.com/datasektionen/taitan/pages"
 )
 
+const (
+	color = `#03a9f4`
+)
+
 // File is a fuzzy file.
 type File struct {
 	Type   string `json:"@type"`
@@ -27,7 +31,7 @@ func NewFile(resp map[string]*pages.Resp) File {
 		fs = append(fs, Fuzz{
 			Name:  r.Title,
 			Str:   r.Slug,
-			Color: "not implemented",
+			Color: color,
 			Href:  fmt.Sprintf("http://datasektionen.se%s", path),
 		})
 	}
