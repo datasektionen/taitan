@@ -167,7 +167,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		log.Debugf("Response: %#v\n", string(buf))
-		res.Header().Set("Content-Type", "application/json")
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		res.Write(buf)
 		return
 	}
@@ -207,6 +207,6 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	}
 	log.Info("Serve the response.")
 	log.Debugf("Response: %#v\n", string(buf))
-	res.Header().Set("Content-Type", "application/json")
+	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	res.Write(buf)
 }
