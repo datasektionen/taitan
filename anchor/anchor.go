@@ -24,7 +24,7 @@ func Anchors(body string) (anchs []Anchor, err error) {
 	// Recursively find <h1> elements.
 	var findAnchors func(*html.Node)
 	findAnchors = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "h1" {
+		if n.Type == html.ElementNode && n.Data == "h2" {
 			// Append valid anchors.
 			anchs = anchor(n, anchs)
 		}
@@ -38,7 +38,7 @@ func Anchors(body string) (anchs []Anchor, err error) {
 
 // anchor appends valid anchors to anchs.
 func anchor(n *html.Node, anchs []Anchor) []Anchor {
-	log.WithField("attrs", n.Attr).Debug("Found potential anchor (<h1>)")
+	log.WithField("attrs", n.Attr).Debug("Found potential anchor (<h2>)")
 	id := findAttr("id", n.Attr)
 	val := plain(n)
 	if val == "" && id == "" {
