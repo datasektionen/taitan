@@ -175,7 +175,7 @@ type Subs struct {
 
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
-	if v, ok := jumpfile[req.URL.Path]; ok {
+	if v, ok := jumpfile[filepath.Clean(req.URL.Path)]; ok {
 		req.URL.Path = v.(string)
 		http.Redirect(res, req, req.URL.String(), http.StatusSeeOther)
 		log.Infoln("Redirect: " + req.URL.String())
