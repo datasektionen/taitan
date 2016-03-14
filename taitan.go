@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -123,6 +124,8 @@ func validRoot(root string) {
 	}
 }
 
+var jumpfile map[string]interface{}
+
 func main() {
 	setVerbosity()
 
@@ -146,6 +149,16 @@ func main() {
 	log.Info("Starting server.")
 	log.Info("Listening on port: ", port)
 
+	buf, err := ioutil.ReadFile(os.Getenv("GOPATH") + "/src/github.com/datasektionen/taitan/jumpfile.json")
+	if err != nil {
+		log.Fatalf("jumpfile readfile: unexpected error: %s", err)
+	}
+	err = json.Unmarshal(buf, &jumpfile)
+	if err != nil {
+		log.Fatalf("jumpfile unmarshal: unexpected error: %s", err)
+	}
+	log.Debugln(jumpfile)
+
 	// Our request handler.
 	http.HandleFunc("/", handler)
 
@@ -156,14 +169,48 @@ func main() {
 	}
 }
 
+type Subs struct {
+	Children []string `json:"children"`
+}
+
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
+	if v, ok := jumpfile[req.URL.Path]; ok {
+		req.URL.Path = v.(string)
+		http.Redirect(res, req, req.URL.String(), http.StatusSeeOther)
+		log.Infoln("Redirect: " + req.URL.String())
+		return
+	}
+	if _, ok := req.URL.Query()["subpages"]; ok {
+		ps := make([]string, 0)
+		for p := range responses.Resps {
+			if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
+				ps = append(ps, p)
+			}
+		}
+		var s Subs
+		log.Warnln(ps)
+		s.Children = ps
+		buf, err := json.Marshal(s)
+		if err != nil {
+			log.Warnf("handler: unexpected error: %#v\n", err)
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		log.Info("Serve the response.")
+		log.Debugf("Response: %#v\n", string(buf))
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		res.Write(buf)
+		return
+	}
+
 	if req.URL.Path == "/fuzzyfile" {
 		log.Info("Fuzzyfile")
 		buf, err := json.Marshal(fuzz.NewFile(responses.Resps))
 		if err != nil {
 			log.Warnf("handler: unexpected error: %#v\n", err)
 			res.WriteHeader(http.StatusInternalServerError)
+
 			return
 		}
 		log.Debugf("Response: %#v\n", string(buf))
