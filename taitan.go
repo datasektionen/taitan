@@ -181,29 +181,6 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		log.Infoln("Redirect: " + req.URL.String())
 		return
 	}
-	if _, ok := req.URL.Query()["subpages"]; ok {
-		ps := make([]string, 0)
-		for p := range responses.Resps {
-			if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
-				ps = append(ps, p)
-			}
-		}
-		var s Subs
-		log.Warnln(ps)
-		s.Children = ps
-		buf, err := json.Marshal(s)
-		if err != nil {
-			log.Warnf("handler: unexpected error: %#v\n", err)
-			res.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		log.Info("Serve the response.")
-		log.Debugf("Response: %#v\n", string(buf))
-		res.Header().Set("Content-Type", "application/json; charset=utf-8")
-		res.Write(buf)
-		return
-	}
-
 	if req.URL.Path == "/fuzzyfile" {
 		log.Info("Fuzzyfile")
 		buf, err := json.Marshal(fuzz.NewFile(responses.Resps))
@@ -246,6 +223,18 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Info("Marshaling the response.")
+
+	ps := make([]string, 0)
+	if _, ok := req.URL.Query()["subpages"]; ok {
+		for p := range responses.Resps {
+			if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
+				ps = append(ps, p)
+			}
+		}
+		log.Warnln(ps)
+	}
+
+	r.Children = ps
 	buf, err := json.Marshal(r)
 	if err != nil {
 		log.Warnf("handler: unexpected error: %#v\n", err)

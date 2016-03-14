@@ -22,6 +22,7 @@ type Resp struct {
 	Body      string          `json:"body"`       // Main content of the page.
 	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
 	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
+	Children  []string        `json:"children"`
 }
 
 // Load intializes a root directory and serves all sub-folders.
