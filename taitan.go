@@ -149,7 +149,7 @@ func main() {
 	log.Info("Starting server.")
 	log.Info("Listening on port: ", port)
 
-	buf, err := ioutil.ReadFile(os.Getenv("GOPATH") + "/src/github.com/datasektionen/taitan/jumpfile.json")
+	buf, err := ioutil.ReadFile("jumpfile.json")
 	if err != nil {
 		log.Fatalf("jumpfile readfile: unexpected error: %s", err)
 	}
