@@ -26,7 +26,8 @@ type Resp struct {
 }
 
 type Child struct {
-	Slug, Title string
+	Slug  string `json:"slug"`
+	Title string `json:"title"`
 }
 
 // Load intializes a root directory and serves all sub-folders.
