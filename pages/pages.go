@@ -56,6 +56,7 @@ func (n *Node) hasNode(path string) bool {
 }
 
 func (f *Node) AddNode(p string, paths []string, title string) {
+	// Yay! Create us!
 	if len(paths) == 0 {
 		f.Title = title
 		f.Slug = p
@@ -63,7 +64,11 @@ func (f *Node) AddNode(p string, paths []string, title string) {
 	}
 	// Parent folder.
 	parent := paths[0]
-	log.Println(p, paths, title)
+	// Are we the parent? :)
+	if f.path == parent {
+		f.AddNode(p, paths[1:], title)
+		return
+	}
 	// Have we already created the parent?
 	if f.hasNode(parent) {
 		f.getNode(parent).AddNode(p, paths[1:], title)
@@ -72,6 +77,14 @@ func (f *Node) AddNode(p string, paths []string, title string) {
 	// Create it and move on.
 	f.Children = append(f.Children, NewNode(parent, p, title))
 	f.getNode(parent).AddNode(p, paths[1:], title)
+}
+
+func (f *Node) Num() int {
+	sum := 1
+	for _, c := range f.Children {
+		sum += c.Num()
+	}
+	return sum
 }
 
 // Load intializes a root directory and serves all sub-folders.

@@ -222,9 +222,14 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Info("Marshaling the response.")
-	root := pages.NewNode("/", "/", responses.Resps["/"].Title)
+	root := pages.NewNode(filepath.Base(clean), clean, responses.Resps[clean].Title)
 	for p := range responses.Resps {
-		root.AddNode(p, strings.FieldsFunc(p, func(c rune) bool { return c == '/' }), responses.Resps[p].Title)
+		if strings.HasPrefix(p, clean) && p != clean {
+			root.AddNode(p, strings.FieldsFunc(p, func(c rune) bool { return c == '/' }), responses.Resps[p].Title)
+		}
+	}
+	if root.Num() == 1 {
+		root = nil
 	}
 
 	r.Children = root
