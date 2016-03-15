@@ -225,8 +225,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	// ps := make([]pages.Child, 0)
 	root := pages.NewNode("/", responses.Resps["/"].Title)
 	for p := range responses.Resps {
-		test := strings.FieldsFunc(p, func(c rune) bool { return c == '/' })
-		root.AddNode(test, responses.Resps[p].Title)
+		root.AddNode(p, strings.FieldsFunc(p, func(c rune) bool { return c == '/' }), responses.Resps[p].Title)
 		log.Warnln(root.String())
 		// if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
 		// 	ps = append(ps, pages.Child{Slug: p, Title: responses.Resps[p].Title})

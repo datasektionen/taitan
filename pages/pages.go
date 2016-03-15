@@ -49,21 +49,21 @@ func (n *Node) hasNode(slug string) bool {
 	return ok
 }
 
-func (f *Node) AddNode(path []string, title string) {
+func (f *Node) AddNode(p string, path []string, title string) {
 	if len(path) == 0 {
 		if f.Title == "" {
 			f.Title = title
 		}
 		return
 	}
-	slug := path[0]
-	log.Println(slug, path)
-	if f.hasNode(slug) {
-		f.getNode(slug).AddNode(path[1:], title)
+	key := path[0]
+	log.Println(p, path)
+	if f.hasNode(key) {
+		f.getNode(key).AddNode(p, path[1:], title)
 		return
 	}
-	f.Children[slug] = NewNode(slug, title)
-	f.getNode(slug).AddNode(path[1:], title)
+	f.Children[key] = NewNode(p, title)
+	f.getNode(key).AddNode(p, path[1:], title)
 }
 
 func (f *Node) String() (str string) {
