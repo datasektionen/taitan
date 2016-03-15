@@ -26,53 +26,52 @@ type Resp struct {
 }
 
 type Node struct {
-	Slug     string           `json:"slug"`
-	Title    string           `json:"title"`
-	Children map[string]*Node `json:"children,omitempty"`
+	path     string  `json:"-"`
+	Slug     string  `json:"slug"`
+	Title    string  `json:"title"`
+	Children []*Node `json:"children,omitempty"`
 }
 
-func NewNode(slug, title string) *Node {
-	return &Node{Slug: slug, Title: title, Children: make(map[string]*Node)}
+func NewNode(path, slug, title string) *Node {
+	return &Node{path: path, Slug: slug, Title: title, Children: make([]*Node, 0)}
 }
 
-func (f *Node) getNode(slug string) *Node {
-	if nextN, ok := f.Children[slug]; ok {
-		return nextN
-	} else {
-		log.Fatalf("Expected nested Node %v in %v\n", slug, f.Slug)
+func (f *Node) getNode(path string) *Node {
+	for _, c := range f.Children {
+		if c.path == path {
+			return c
+		}
 	}
+	log.Fatalf("Expected nested Node %v in %v\n", path, f.path)
 	return &Node{} // cannot happen
 }
 
-func (n *Node) hasNode(slug string) bool {
-	_, ok := n.Children[slug]
-	return ok
-}
-
-func (f *Node) AddNode(p string, path []string, title string) {
-	if len(path) == 0 {
-		if f.Title == "" {
-			f.Title = title
+func (n *Node) hasNode(path string) bool {
+	for _, c := range n.Children {
+		if c.path == path {
+			return true
 		}
-		return
 	}
-	key := path[0]
-	log.Println(p, path)
-	if f.hasNode(key) {
-		f.getNode(key).AddNode(p, path[1:], title)
-		return
-	}
-	f.Children[key] = NewNode(p, title)
-	f.getNode(key).AddNode(p, path[1:], title)
+	return false
 }
 
-func (f *Node) String() (str string) {
-	str += f.Slug + ":" + f.Title + " + {\n"
-	for _, child := range f.Children {
-		str += "\t" + child.String()
+func (f *Node) AddNode(p string, paths []string, title string) {
+	if len(paths) == 0 {
+		f.Title = title
+		f.Slug = p
+		return
 	}
-	str += "\n}"
-	return str
+	// Parent folder.
+	parent := paths[0]
+	log.Println(p, paths, title)
+	// Have we already created the parent?
+	if f.hasNode(parent) {
+		f.getNode(parent).AddNode(p, paths[1:], title)
+		return
+	}
+	// Create it and move on.
+	f.Children = append(f.Children, NewNode(parent, p, title))
+	f.getNode(parent).AddNode(p, paths[1:], title)
 }
 
 // Load intializes a root directory and serves all sub-folders.
