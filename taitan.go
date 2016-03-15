@@ -187,7 +187,6 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			log.Warnf("handler: unexpected error: %#v\n", err)
 			res.WriteHeader(http.StatusInternalServerError)
-
 			return
 		}
 		log.Debugf("Response: %#v\n", string(buf))
@@ -224,11 +223,11 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	}
 	log.Info("Marshaling the response.")
 
-	ps := make([]string, 0)
+	ps := make([]pages.Child, 0)
 	if _, ok := req.URL.Query()["subpages"]; ok {
 		for p := range responses.Resps {
 			if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
-				ps = append(ps, p)
+				ps = append(ps, pages.Child{Slug: p, Title: responses.Resps[p].Title})
 			}
 		}
 		log.Warnln(ps)
