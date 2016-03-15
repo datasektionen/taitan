@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -221,9 +222,15 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	slugs := make([]string, 0)
+	for k := range responses.Resps {
+		slugs = append(slugs, k)
+	}
+	sort.Strings(slugs)
 	log.Info("Marshaling the response.")
 	root := pages.NewNode(filepath.Base(clean), clean, responses.Resps[clean].Title)
-	for p := range responses.Resps {
+	for _, p := range slugs {
 		if strings.HasPrefix(p, clean) && p != clean {
 			root.AddNode(p, strings.FieldsFunc(p, func(c rune) bool { return c == '/' }), responses.Resps[p].Title)
 		}
