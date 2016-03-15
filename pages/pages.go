@@ -22,12 +22,57 @@ type Resp struct {
 	Body      string          `json:"body"`       // Main content of the page.
 	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
 	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
-	Children  []Child         `json:"children"`
+	Children  *Node           `json:"children,omitempty"`
 }
 
-type Child struct {
-	Slug  string `json:"slug"`
-	Title string `json:"title"`
+type Node struct {
+	Slug     string           `json:"slug"`
+	Title    string           `json:"title"`
+	Children map[string]*Node `json:"children,omitempty"`
+}
+
+func NewNode(slug, title string) *Node {
+	return &Node{Slug: slug, Title: title, Children: make(map[string]*Node)}
+}
+
+func (f *Node) getNode(slug string) *Node {
+	if nextN, ok := f.Children[slug]; ok {
+		return nextN
+	} else {
+		log.Fatalf("Expected nested Node %v in %v\n", slug, f.Slug)
+	}
+	return &Node{} // cannot happen
+}
+
+func (n *Node) hasNode(slug string) bool {
+	_, ok := n.Children[slug]
+	return ok
+}
+
+func (f *Node) AddNode(path []string, title string) {
+	if len(path) == 0 {
+		if f.Title == "" {
+			f.Title = title
+		}
+		return
+	}
+	slug := path[0]
+	log.Println(slug, path)
+	if f.hasNode(slug) {
+		f.getNode(slug).AddNode(path[1:], title)
+		return
+	}
+	f.Children[slug] = NewNode(slug, title)
+	f.getNode(slug).AddNode(path[1:], title)
+}
+
+func (f *Node) String() (str string) {
+	str += f.Slug + ":" + f.Title + " + {\n"
+	for _, child := range f.Children {
+		str += "\t" + child.String()
+	}
+	str += "\n}"
+	return str
 }
 
 // Load intializes a root directory and serves all sub-folders.

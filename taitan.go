@@ -222,16 +222,19 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	log.Info("Marshaling the response.")
-
-	ps := make([]pages.Child, 0)
+	// ps := make([]pages.Child, 0)
+	root := pages.NewNode("/", responses.Resps["/"].Title)
 	for p := range responses.Resps {
-		if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
-			ps = append(ps, pages.Child{Slug: p, Title: responses.Resps[p].Title})
-		}
+		test := strings.FieldsFunc(p, func(c rune) bool { return c == '/' })
+		root.AddNode(test, responses.Resps[p].Title)
+		log.Warnln(root.String())
+		// if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
+		// 	ps = append(ps, pages.Child{Slug: p, Title: responses.Resps[p].Title})
+		// }
 	}
-	log.Warnln(ps)
+	// log.Debugln(ps)
 
-	r.Children = ps
+	r.Children = root
 	buf, err := json.Marshal(r)
 	if err != nil {
 		log.Warnf("handler: unexpected error: %#v\n", err)
