@@ -224,14 +224,12 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	log.Info("Marshaling the response.")
 
 	ps := make([]pages.Child, 0)
-	if _, ok := req.URL.Query()["subpages"]; ok {
-		for p := range responses.Resps {
-			if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
-				ps = append(ps, pages.Child{Slug: p, Title: responses.Resps[p].Title})
-			}
+	for p := range responses.Resps {
+		if strings.HasPrefix(p, req.URL.Path) && p != req.URL.Path {
+			ps = append(ps, pages.Child{Slug: p, Title: responses.Resps[p].Title})
 		}
-		log.Warnln(ps)
 	}
+	log.Warnln(ps)
 
 	r.Children = ps
 	buf, err := json.Marshal(r)
