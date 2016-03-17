@@ -15,8 +15,9 @@ import (
 
 // Resp is the response we serve for file queries.
 type Resp struct {
-	Title     string          `json:"title"`      // Human-readable title.
-	Slug      string          `json:"slug"`       // URL-slug.
+	Title     string          `json:"title"` // Human-readable title.
+	Slug      string          `json:"slug"`  // URL-slug.
+	URL       string          `json:"url"`
 	UpdatedAt string          `json:"updated_at"` // Body update time.
 	Image     string          `json:"image"`      // Path/URL/Placeholder to image.
 	Body      string          `json:"body"`       // Main content of the page.

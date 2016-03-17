@@ -229,12 +229,15 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	// Our web tree.
 	root := pages.NewNode("/", "/", responses.Resps["/"].Title)
 	for _, slug := range slugs {
-		root.AddNode(
-			slug,
-			responses.Resps[slug].Title,
-			strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
-		)
+		if strings.HasPrefix(slug, filepath.Dir(clean)) {
+			root.AddNode(
+				slug,
+				responses.Resps[slug].Title,
+				strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
+			)
+		}
 	}
+	r.URL = clean
 	if root.Num() == 1 {
 		r.Children = nil
 	} else {
