@@ -22,7 +22,7 @@ type Resp struct {
 	Body      string          `json:"body"`       // Main content of the page.
 	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
 	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
-	Children  *Node           `json:"children,omitempty"`
+	Children  []*Node         `json:"children,omitempty"`
 }
 
 type Node struct {
@@ -55,7 +55,7 @@ func (n *Node) hasNode(path string) bool {
 	return false
 }
 
-func (f *Node) AddNode(p string, paths []string, title string) {
+func (f *Node) AddNode(p string, title string, paths []string) {
 	// Yay! Create us!
 	if len(paths) == 0 {
 		f.Title = title
@@ -66,17 +66,17 @@ func (f *Node) AddNode(p string, paths []string, title string) {
 	parent := paths[0]
 	// Are we the parent? :)
 	if f.path == parent {
-		f.AddNode(p, paths[1:], title)
+		f.AddNode(p, title, paths[1:])
 		return
 	}
 	// Have we already created the parent?
 	if f.hasNode(parent) {
-		f.getNode(parent).AddNode(p, paths[1:], title)
+		f.getNode(parent).AddNode(p, title, paths[1:])
 		return
 	}
 	// Create it and move on.
 	f.Children = append(f.Children, NewNode(parent, p, title))
-	f.getNode(parent).AddNode(p, paths[1:], title)
+	f.getNode(parent).AddNode(p, title, paths[1:])
 }
 
 func (f *Node) Num() int {

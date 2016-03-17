@@ -40,8 +40,8 @@ GET /:path
 
 ```bash
 $ go get -u github.com/datasektionen/taitan
-$ taitan -v site/
-INFO[0000] Our root directory                            Root=site/
+$ taitan -v 
+INFO[0000] Our root directory                            Root=dummy-data/
 INFO[0000] Starting server.                             
 INFO[0000] Listening on port: 4000
 ...

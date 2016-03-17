@@ -26,7 +26,7 @@ var (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] ROOT\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
 	flag.PrintDefaults()
 	os.Exit(1)
 }
@@ -170,10 +170,6 @@ func main() {
 	}
 }
 
-type Subs struct {
-	Children []string `json:"children"`
-}
-
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
 	if v, ok := jumpfile[filepath.Clean(req.URL.Path)]; ok {
@@ -223,23 +219,29 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	slugs := make([]string, 0)
+	// Sort the slugs
+	var slugs []string
 	for k := range responses.Resps {
 		slugs = append(slugs, k)
 	}
 	sort.Strings(slugs)
-	log.Info("Marshaling the response.")
-	root := pages.NewNode(filepath.Base(clean), clean, responses.Resps[clean].Title)
-	for _, p := range slugs {
-		if strings.HasPrefix(p, clean) && p != clean {
-			root.AddNode(p, strings.FieldsFunc(p, func(c rune) bool { return c == '/' }), responses.Resps[p].Title)
-		}
+
+	// Our web tree.
+	root := pages.NewNode("/", "/", responses.Resps["/"].Title)
+	for _, slug := range slugs {
+		root.AddNode(
+			slug,
+			responses.Resps[slug].Title,
+			strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
+		)
 	}
 	if root.Num() == 1 {
-		root = nil
+		r.Children = nil
+	} else {
+		r.Children = root.Children
 	}
 
-	r.Children = root
+	log.Info("Marshaling the response.")
 	buf, err := json.Marshal(r)
 	if err != nil {
 		log.Warnf("handler: unexpected error: %#v\n", err)
