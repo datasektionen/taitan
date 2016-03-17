@@ -209,7 +209,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 
 	clean := filepath.Clean(query)
 	log.WithField("clean", clean).Info("Sanitized path")
-
+	log.Println(rootDir(clean))
 	responses.Lock()
 	r, ok := responses.Resps[clean]
 	responses.Unlock()
@@ -255,4 +255,15 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	log.Debugf("Response: %#v\n", string(buf))
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	res.Write(buf)
+}
+
+func rootDir(path string) string {
+	for {
+		test := filepath.Dir(path)
+		if test == "." || test == "/" {
+			break
+		}
+		path = test
+	}
+	return path
 }
