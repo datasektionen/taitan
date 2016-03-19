@@ -146,7 +146,7 @@ func toHTML(filename string) (string, error) {
 	// Parse markdown where all id's are created from the values inside
 	// the element tag.
 	buf = blackfriday.MarkdownOptions(buf, renderer, blackfriday.Options{
-		Extensions: blackfriday.EXTENSION_AUTO_HEADER_IDS,
+		Extensions: blackfriday.EXTENSION_AUTO_HEADER_IDS | blackfriday.EXTENSION_TABLES | blackfriday.EXTENSION_FENCED_CODE,
 	})
 	return string(buf), nil
 }
