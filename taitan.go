@@ -229,19 +229,22 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	// Our web tree.
 	root := pages.NewNode("/", "/", responses.Resps["/"].Title)
 	for _, slug := range slugs {
-		if strings.HasPrefix(slug, filepath.Dir(clean)) {
-			root.AddNode(
-				slug,
-				responses.Resps[slug].Title,
-				strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
-			)
-		}
+		// if strings.HasPrefix(slug, filepath.Dir(clean)) {
+		root.AddNode(
+			strings.FieldsFunc(clean, func(c rune) bool { return c == '/' }),
+			slug,
+			responses.Resps[slug].Title,
+			strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
+			false,
+			false,
+		)
+		// }
 	}
 	r.URL = clean
 	if root.Num() == 1 {
-		r.Children = nil
+		r.Nav = nil
 	} else {
-		r.Children = root.Children
+		r.Nav = root.Nav
 	}
 
 	log.Info("Marshaling the response.")

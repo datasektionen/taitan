@@ -23,22 +23,24 @@ type Resp struct {
 	Body      string          `json:"body"`       // Main content of the page.
 	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
 	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
-	Children  []*Node         `json:"children,omitempty"`
+	Nav       []*Node         `json:"nav,omitempty"`
 }
 
 type Node struct {
 	path     string  `json:"-"`
 	Slug     string  `json:"slug"`
 	Title    string  `json:"title"`
-	Children []*Node `json:"children,omitempty"`
+	Active   bool    `json:"active,omitempty"`
+	Expanded bool    `json:"expanded,omitempty"`
+	Nav      []*Node `json:"nav,omitempty"`
 }
 
 func NewNode(path, slug, title string) *Node {
-	return &Node{path: path, Slug: slug, Title: title, Children: make([]*Node, 0)}
+	return &Node{path: path, Slug: slug, Title: title, Nav: make([]*Node, 0)}
 }
 
 func (f *Node) getNode(path string) *Node {
-	for _, c := range f.Children {
+	for _, c := range f.Nav {
 		if c.path == path {
 			return c
 		}
@@ -48,7 +50,7 @@ func (f *Node) getNode(path string) *Node {
 }
 
 func (n *Node) hasNode(path string) bool {
-	for _, c := range n.Children {
+	for _, c := range n.Nav {
 		if c.path == path {
 			return true
 		}
@@ -56,33 +58,38 @@ func (n *Node) hasNode(path string) bool {
 	return false
 }
 
-func (f *Node) AddNode(p string, title string, paths []string) {
+func (f *Node) AddNode(root []string, p string, title string, paths []string, active bool, expanded bool) {
 	// Yay! Create us!
 	if len(paths) == 0 {
+		f.Active = active
+		f.Expanded = expanded
 		f.Title = title
 		f.Slug = p
 		return
 	}
 	// Parent folder.
 	parent := paths[0]
-	// Are we the parent? :)
-	if f.path == parent {
-		f.AddNode(p, title, paths[1:])
-		return
-	}
+
 	// Have we already created the parent?
 	if f.hasNode(parent) {
-		f.getNode(parent).AddNode(p, title, paths[1:])
+		if len(root) == 0 {
+			return
+		}
+		if root[0] == parent {
+			f.getNode(parent).AddNode(root[1:], p, title, paths[1:], false, false)
+		} else if len(paths) == 1 {
+			f.getNode(parent).AddNode(root, p, title, []string{}, false, false)
+		}
 		return
 	}
 	// Create it and move on.
-	f.Children = append(f.Children, NewNode(parent, p, title))
-	f.getNode(parent).AddNode(p, title, paths[1:])
+	f.Nav = append(f.Nav, NewNode(parent, p, title))
+	f.getNode(parent).AddNode(root, p, title, paths[1:], len(root) == 1 && root[0] == parent, len(root) > 1 && root[0] == parent)
 }
 
 func (f *Node) Num() int {
 	sum := 1
-	for _, c := range f.Children {
+	for _, c := range f.Nav {
 		sum += c.Num()
 	}
 	return sum
