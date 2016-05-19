@@ -6,10 +6,6 @@ import (
 	"github.com/datasektionen/taitan/pages"
 )
 
-const (
-	color = `#03a9f4`
-)
-
 // File is a fuzzy file.
 type File struct {
 	Type   string `json:"@type"`
@@ -18,10 +14,10 @@ type File struct {
 
 // Fuzz is a files fuzzy metadata.
 type Fuzz struct {
-	Name  string `json:"name"`  // title
-	Str   string `json:"str"`   // slug
-	Color string `json:"color"` // wtf
-	Href  string `json:"href"`  // fmt.Sprintf("http://datasektionen.se%s", slug)
+	Name  string `json:"name"`            // title
+	Str   string `json:"str"`             // slug
+	Color string `json:"color,omitempty"` // wtf
+	Href  string `json:"href"`            // fmt.Sprintf("http://datasektionen.se%s", slug)
 }
 
 // NewFile returns a fuzzyfile.
@@ -29,10 +25,9 @@ func NewFile(resp map[string]*pages.Resp) File {
 	fs := make([]Fuzz, 0, 128)
 	for path, r := range resp {
 		fs = append(fs, Fuzz{
-			Name:  r.Title,
-			Str:   r.Slug,
-			Color: color,
-			Href:  fmt.Sprintf("http://datasektionen.se%s", path),
+			Name: r.Title,
+			Str:  r.Slug,
+			Href: fmt.Sprintf("http://datasektionen.se%s", path),
 		})
 	}
 	return File{
