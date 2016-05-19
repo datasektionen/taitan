@@ -150,7 +150,7 @@ func main() {
 	log.Info("Starting server.")
 	log.Info("Listening on port: ", port)
 
-	buf, err := ioutil.ReadFile("jumpfile.json")
+	buf, err := ioutil.ReadFile(root + "/jumpfile.json")
 	if err != nil {
 		log.Fatalf("jumpfile readfile: unexpected error: %s", err)
 	}
