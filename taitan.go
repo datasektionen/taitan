@@ -150,15 +150,20 @@ func main() {
 	log.Info("Starting server.")
 	log.Info("Listening on port: ", port)
 
-	buf, err := ioutil.ReadFile(root + "/jumpfile.json")
-	if err != nil {
-		log.Fatalf("jumpfile readfile: unexpected error: %s", err)
+	// If jumpfile exists.
+	if _, err := os.Stat(root + "/jumpfile.json"); err == nil {
+		buf, err := ioutil.ReadFile(root + "/jumpfile.json")
+		if err != nil {
+			log.Fatalf("jumpfile readfile: unexpected error: %s", err)
+		}
+		err = json.Unmarshal(buf, &jumpfile)
+		if err != nil {
+			log.Fatalf("jumpfile unmarshal: unexpected error: %s", err)
+		}
+		log.Debugln(jumpfile)
+	} else {
+		log.Infoln("No jumpfile found")
 	}
-	err = json.Unmarshal(buf, &jumpfile)
-	if err != nil {
-		log.Fatalf("jumpfile unmarshal: unexpected error: %s", err)
-	}
-	log.Debugln(jumpfile)
 
 	// Our request handler.
 	http.HandleFunc("/", handler)
