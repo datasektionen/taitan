@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/rjeczalik/notify"
 	"github.com/datasektionen/taitan/fuzz"
 	"github.com/datasektionen/taitan/pages"
 )
@@ -22,6 +23,7 @@ import (
 var (
 	debug     bool   // Show debug level messages.
 	info      bool   // Show info level messages.
+	watch     bool   // Watch for file changes.
 	responses Atomic // Our parsed responses.
 )
 
@@ -34,6 +36,7 @@ func usage() {
 func init() {
 	flag.BoolVar(&debug, "vv", false, "Print debug messages.")
 	flag.BoolVar(&info, "v", false, "Print info messages.")
+	flag.BoolVar(&watch, "w", false, "Watch for file changes.")
 	flag.Usage = usage
 	flag.Parse()
 }
@@ -168,6 +171,28 @@ func main() {
 	// Our request handler.
 	http.HandleFunc("/", handler)
 
+	if watch {
+		events := make(chan notify.EventInfo, 5)
+
+		if err := notify.Watch(fmt.Sprintf("%s/...", root),
+								events,
+								notify.Create,
+								notify.Remove,
+								notify.Write,
+								notify.Rename); err != nil {
+			log.Fatal(err)
+		}
+		defer notify.Stop(events)
+
+		go func() {
+			for event := range events {
+				log.Info("event:", event)
+				// Lacks error handling as this should not run in production.
+				responses.Resps, _ = pages.Load(getRoot())
+			}
+		}()
+	}
+
 	// Listen on port and serve with our handler.
 	err = http.ListenAndServe(":"+port, nil)
 	if err != nil {
@@ -208,6 +233,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		responses.Unlock()
 		return
 	}
+
 	// Requested URL. We extract the path.
 	query := req.URL.Path
 	log.WithField("query", query).Info("Recieved query")
