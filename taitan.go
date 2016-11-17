@@ -15,9 +15,9 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/rjeczalik/notify"
 	"github.com/datasektionen/taitan/fuzz"
 	"github.com/datasektionen/taitan/pages"
+	"github.com/rjeczalik/notify"
 )
 
 var (
@@ -157,11 +157,11 @@ func main() {
 	if _, err := os.Stat(root + "/jumpfile.json"); err == nil {
 		buf, err := ioutil.ReadFile(root + "/jumpfile.json")
 		if err != nil {
-			log.Fatalf("jumpfile readfile: unexpected error: %s", err)
+			log.Warningln("jumpfile readfile: unexpected error: %s", err)
 		}
 		err = json.Unmarshal(buf, &jumpfile)
 		if err != nil {
-			log.Fatalf("jumpfile unmarshal: unexpected error: %s", err)
+			log.Warningln("jumpfile unmarshal: unexpected error: %s", err)
 		}
 		log.Debugln(jumpfile)
 	} else {
@@ -173,14 +173,13 @@ func main() {
 
 	if watch {
 		events := make(chan notify.EventInfo, 5)
-
 		if err := notify.Watch(fmt.Sprintf("%s/...", root),
-								events,
-								notify.Create,
-								notify.Remove,
-								notify.Write,
-								notify.Rename); err != nil {
-			log.Fatal(err)
+			events,
+			notify.Create,
+			notify.Remove,
+			notify.Write,
+			notify.Rename); err != nil {
+			log.Warningln("notify.Watch:", err)
 		}
 		defer notify.Stop(events)
 
