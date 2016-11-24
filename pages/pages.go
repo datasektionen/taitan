@@ -117,7 +117,7 @@ func Load(root string) (pages map[string]*Resp, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return parseDirs(root, dirs)
+	return parseDirs(root, dirs), nil
 }
 
 // stripRoot removes root level of a directory.
@@ -129,13 +129,12 @@ func stripRoot(root string, dir string) string {
 
 // parseDirs parses each directory into a response. Returns a map from requested
 // urls into responses.
-func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
+func parseDirs(root string, dirs []string) (pages map[string]*Resp) {
 	pages = map[string]*Resp{}
 	for _, dir := range dirs {
 		r, err := parseDir(root, dir)
 		if err != nil {
 			log.Warnln(err)
-			return nil, nil
 		}
 		pages[stripRoot(root, dir)] = r
 		log.WithFields(log.Fields{
@@ -143,7 +142,7 @@ func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
 			"dir":  dir,
 		}).Debug("Our parsed response\n")
 	}
-	return pages, nil
+	return pages
 }
 
 // toHTML reads a markdown file and returns a HTML string.
@@ -183,7 +182,9 @@ func parseDir(root, dir string) (*Resp, error) {
 	// Parse sidebar to HTML.
 	sidebar, err := toHTML(sidebarPath)
 	if err != nil {
-		return nil, err
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
 	}
 	log.WithField("sidebar", sidebar).Debug("HTML of sidebar.md")
 
