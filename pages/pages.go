@@ -26,8 +26,9 @@ type Resp struct {
 	Nav       []*Node         `json:"nav,omitempty"`
 }
 
+// Node is a recursive node in a page tree.
 type Node struct {
-	path     string  `json:"-"`
+	path     string
 	Slug     string  `json:"slug"`
 	Title    string  `json:"title"`
 	Active   bool    `json:"active,omitempty"`
@@ -35,17 +36,18 @@ type Node struct {
 	Nav      []*Node `json:"nav,omitempty"`
 }
 
+// NewNode creates a new node with it's path, slug and page title.
 func NewNode(path, slug, title string) *Node {
 	return &Node{path: path, Slug: slug, Title: title, Nav: make([]*Node, 0)}
 }
 
-func (f *Node) getNode(path string) *Node {
-	for _, c := range f.Nav {
+func (n *Node) getNode(path string) *Node {
+	for _, c := range n.Nav {
 		if c.path == path {
 			return c
 		}
 	}
-	log.Fatalf("Expected nested Node %v in %v\n", path, f.path)
+	log.Fatalf("Expected nested Node %v in %v\n", path, n.path)
 	return &Node{} // cannot happen
 }
 
@@ -58,38 +60,40 @@ func (n *Node) hasNode(path string) bool {
 	return false
 }
 
-func (f *Node) AddNode(root []string, p string, title string, paths []string, active bool, expanded bool) {
+// AddNode adds a node to the node tree.
+func (n *Node) AddNode(root []string, p string, title string, paths []string, active bool, expanded bool) {
 	// Yay! Create us!
 	if len(paths) == 0 {
-		f.Active = active
-		f.Expanded = expanded
-		f.Title = title
-		f.Slug = p
+		n.Active = active
+		n.Expanded = expanded
+		n.Title = title
+		n.Slug = p
 		return
 	}
 	// Parent folder.
 	parent := paths[0]
 
 	// Have we already created the parent?
-	if f.hasNode(parent) {
+	if n.hasNode(parent) {
 		if len(root) == 0 {
 			return
 		}
 		if root[0] == parent {
-			f.getNode(parent).AddNode(root[1:], p, title, paths[1:], false, false)
+			n.getNode(parent).AddNode(root[1:], p, title, paths[1:], false, false)
 		} else if len(paths) == 1 {
-			f.getNode(parent).AddNode(root, p, title, []string{}, false, false)
+			n.getNode(parent).AddNode(root, p, title, []string{}, false, false)
 		}
 		return
 	}
 	// Create it and move on.
-	f.Nav = append(f.Nav, NewNode(parent, p, title))
-	f.getNode(parent).AddNode(root, p, title, paths[1:], len(root) == 1 && root[0] == parent, len(root) > 1 && root[0] == parent)
+	n.Nav = append(n.Nav, NewNode(parent, p, title))
+	n.getNode(parent).AddNode(root, p, title, paths[1:], len(root) == 1 && root[0] == parent, len(root) > 1 && root[0] == parent)
 }
 
-func (f *Node) Num() int {
+// Num returns the recursive number of pages under this node.
+func (n *Node) Num() int {
 	sum := 1
-	for _, c := range f.Nav {
+	for _, c := range n.Nav {
 		sum += c.Num()
 	}
 	return sum
