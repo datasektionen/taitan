@@ -1,11 +1,21 @@
 {
 	"ImportPath": "github.com/datasektionen/taitan",
-	"GoVersion": "go1.5.1",
+	"GoVersion": "go1.8",
+	"GodepVersion": "v75",
 	"Deps": [
+		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.2.0-21-g9906417",
+			"Rev": "99064174e013895bbd9b025c31100bd1d9b590ca"
+		},
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.8.7-35-gfe6f2b0",
 			"Rev": "fe6f2b03125e4fcafb21406381010e363a072c80"
+		},
+		{
+			"ImportPath": "github.com/rjeczalik/notify",
+			"Rev": "7e20c15e6693a7d6ad269a94b70ed68bc4a875a7"
 		},
 		{
 			"ImportPath": "github.com/russross/blackfriday",
@@ -17,11 +27,11 @@
 			"Rev": "10ef21a441db47d8b13ebcc5fd2310f636973c77"
 		},
 		{
-			"ImportPath": "golang.org/x/exp/inotify",
-			"Rev": "fa44da8ac9c0ab78f2210fdcbd971bb69e44750e"
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "b4e17d61b15679caf2335da776c614169a1b4643"
 		},
 		{
-			"ImportPath": "golang.org/x/net/html",
+			"ImportPath": "golang.org/x/net/html/atom",
 			"Rev": "b4e17d61b15679caf2335da776c614169a1b4643"
 		}
 	]
