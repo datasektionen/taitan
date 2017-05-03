@@ -76,8 +76,11 @@ func getContent() {
 	root := getRoot()
 	if _, err = os.Stat(root); os.IsNotExist(err) {
 		runGit("clone", []string{"clone", u.String()})
+		runGit("submodule init", []string{"-C", root, "submodule", "init"})
+		runGit("submodule update", []string{"-C", root, "submodule", "update"})
 	} else {
 		runGit("pull", []string{"-C", root, "pull"})
+		runGit("submodule update", []string{"-C", root, "submodule", "update"})
 	}
 }
 
@@ -94,6 +97,7 @@ func runGit(action string, args []string) {
 	if err != nil {
 		log.Warnf("%sed with error: %v\n", action, err)
 	}
+
 	log.Infof("Git %s finished!", action)
 }
 
