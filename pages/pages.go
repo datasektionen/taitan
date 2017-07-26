@@ -20,6 +20,7 @@ type Resp struct {
 	URL       string          `json:"url"`
 	UpdatedAt string          `json:"updated_at"` // Body update time.
 	Image     string          `json:"image"`      // Path/URL/Placeholder to image.
+	Message   string          `json:"message"`    // Message to show at top
 	Body      string          `json:"body"`       // Main content of the page.
 	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
 	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
@@ -107,6 +108,7 @@ func Load(root string) (pages map[string]*Resp, err error) {
 		if !fi.IsDir() {
 			return nil
 		}
+
 		// Ignore our .git folder.
 		if fi.IsDir() && fi.Name() == ".git" {
 			return filepath.SkipDir
@@ -202,6 +204,7 @@ func parseDir(root, dir string) (*Resp, error) {
 	var meta struct {
 		Image string
 		Title string
+		Message string
 	}
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
 		return nil, err
@@ -213,6 +216,7 @@ func parseDir(root, dir string) (*Resp, error) {
 		Slug:      filepath.Base(stripRoot(root, dir)),
 		UpdatedAt: fi.ModTime().Format(iso8601DateTime),
 		Image:     meta.Image,
+		Message:   meta.Message,
 		Body:      body,
 		Sidebar:   sidebar,
 		Anchors:   anchs,
