@@ -190,8 +190,12 @@ func main() {
 		go func() {
 			for event := range events {
 				log.Info("event:", event)
-				// Lacks error handling as this should not run in production.
-				responses.Resps, _ = pages.Load(getRoot())
+				resps, err := pages.Load(getRoot())
+				if err == nil {
+					responses.Resps = resps
+				} else {
+					log.Warn("Ignoring update: " + err.Error())
+				}
 			}
 		}()
 	}
@@ -225,15 +229,17 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if req.Header.Get("X-Github-Event") == "push" {
-		var err error
 		log.Infoln("Push hook")
 		getContent()
-		responses.Lock()
-		responses.Resps, err = pages.Load(getRoot())
-		if err != nil {
-			log.Error(err)
+		resps, err := pages.Load(getRoot())
+		if err == nil {
+			responses.Lock()
+			responses.Resps = resps
+			responses.Unlock()
+		} else {
+			log.Warn("Ignoring update: ", err)
+			res.WriteHeader(http.StatusNotAcceptable)
 		}
-		responses.Unlock()
 		return
 	}
 
