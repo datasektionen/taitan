@@ -157,20 +157,7 @@ func main() {
 	log.Info("Starting server.")
 	log.Info("Listening on port: ", port)
 
-	// If jumpfile exists.
-	if _, err := os.Stat(root + "/jumpfile.json"); err == nil {
-		buf, err := ioutil.ReadFile(root + "/jumpfile.json")
-		if err != nil {
-			log.Warningln("jumpfile readfile: unexpected error: %s", err)
-		}
-		err = json.Unmarshal(buf, &jumpfile)
-		if err != nil {
-			log.Warningln("jumpfile unmarshal: unexpected error: %s", err)
-		}
-		log.Debugln(jumpfile)
-	} else {
-		log.Infoln("No jumpfile found")
-	}
+	updateJumpFile(root)
 
 	// Our request handler.
 	http.HandleFunc("/", handler)
@@ -207,6 +194,23 @@ func main() {
 	}
 }
 
+func updateJumpFile(root string) {
+	// If jumpfile exists.
+	if _, err := os.Stat(root + "/jumpfile.json"); err == nil {
+		buf, err := ioutil.ReadFile(root + "/jumpfile.json")
+		if err != nil {
+			log.Warningln("jumpfile readfile: unexpected error: %s", err)
+		}
+		err = json.Unmarshal(buf, &jumpfile)
+		if err != nil {
+			log.Warningln("jumpfile unmarshal: unexpected error: %s", err)
+		}
+		log.Debugln(jumpfile)
+	} else {
+		log.Infoln("No jumpfile found")
+	}
+}
+
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
 	if v, ok := jumpfile[filepath.Clean(req.URL.Path)]; ok {
@@ -240,6 +244,8 @@ func handler(res http.ResponseWriter, req *http.Request) {
 			log.Warn("Ignoring update: ", err)
 			res.WriteHeader(http.StatusNotAcceptable)
 		}
+
+		updateJumpFile(getRoot())
 		return
 	}
 
