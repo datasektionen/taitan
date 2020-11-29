@@ -9,8 +9,8 @@ import (
 	"github.com/datasektionen/taitan/anchor"
 
 	"github.com/BurntSushi/toml"
-	log "github.com/Sirupsen/logrus"
 	"github.com/russross/blackfriday"
+	log "github.com/sirupsen/logrus"
 )
 
 // Resp is the response we serve for file queries.
