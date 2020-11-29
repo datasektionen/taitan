@@ -202,8 +202,8 @@ func parseDir(root, dir string) (*Resp, error) {
 
 	// Parse meta data from a toml file.
 	var meta struct {
-		Image string
-		Title string
+		Image   string
+		Title   string
 		Message string
 	}
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
