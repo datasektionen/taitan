@@ -14,10 +14,10 @@ import (
 	"strings"
 	"sync"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/datasektionen/taitan/fuzz"
 	"github.com/datasektionen/taitan/pages"
 	"github.com/rjeczalik/notify"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
