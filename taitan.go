@@ -217,9 +217,9 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("Access-Control-Allow-Methods", "*")
 
 	if v, ok := jumpfile[filepath.Clean(req.URL.Path)]; ok {
-		req.URL.Path = v.(string)
-		http.Redirect(res, req, req.URL.String(), http.StatusSeeOther)
-		log.Infoln("Redirect: " + req.URL.String())
+		newURL := v.(string)
+		http.Redirect(res, req, newURL, http.StatusSeeOther)
+		log.Infoln("Redirect: " + newURL)
 		return
 	}
 	if req.URL.Path == "/fuzzyfile" {
