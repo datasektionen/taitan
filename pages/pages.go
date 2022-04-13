@@ -110,7 +110,7 @@ func Load(root string) (pages map[string]*Resp, err error) {
 		}
 
 		// Ignore our .git folder.
-		if fi.IsDir() && fi.Name() == ".git" {
+		if fi.IsDir() && fi.Name()[0] == '.' {
 			return filepath.SkipDir
 		}
 		dirs = append(dirs, path)
