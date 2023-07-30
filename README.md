@@ -1,8 +1,3 @@
-## WIP
-
-This project is a *work in progress*. The implementation is *incomplete* and
-subject to change. The documentation can be inaccurate.
-
 # taitan
 
 [![Build Status](https://travis-ci.org/datasektionen/taitan.svg?branch=master)](https://travis-ci.org/datasektionen/taitan)
@@ -10,7 +5,7 @@ subject to change. The documentation can be inaccurate.
 [![GoDoc](https://godoc.org/github.com/datasektionen/taitan?status.svg)](https://godoc.org/github.com/datasektionen/taitan)
 [![Go Report Card](http://goreportcard.com/badge/datasektionen/taitan)](http://goreportcard.com/report/datasektionen/taitan)
 
-*Taitan* is a RESTful markdown to HTML supplier of pages for [datasektionen/bawang](http://github.com/datasektionen/bawang).
+*Taitan* is a RESTful markdown to HTML supplier of pages for [bawang](http://github.com/datasektionen/bawang).
 
 *Taitan(タイタン) is romaji for Titan.*
 
@@ -36,16 +31,24 @@ GET /:path
 }
 ```
 
-## Installation & usage
+## Running
 
-```bash
-$ go get -u github.com/datasektionen/taitan
-$ taitan -v 
-INFO[0000] Our root directory                            Root=dummy-data/
-INFO[0000] Starting server.                             
-INFO[0000] Listening on port: 4000
-...
-```
+### Environment variables
+
+| Name        | Description                                                                             |
+|-------------|-----------------------------------------------------------------------------------------|
+| PORT        | The port to listen to requests on                                                       |
+| TOKEN       | GitHub Personal Access Token used for authorization when pulling the content repository |
+| CONTENT_URL | The repository to get content from                                                      |
+
+### Flags
+
+| Name | Description                                  |
+|------|----------------------------------------------|
+| -v   | Print info messages                          |
+| -vv  | Print more info messages                     |
+| -w   | Reload the contents when they change on disk |
+| -c   | Directory to serve contents from. Setting this disables the automatic fetching using git and makes the `TOKEN` and `CONTENT_URL` unused. |
 
 ## API documentation
 
