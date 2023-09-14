@@ -291,6 +291,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 			strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
 			false,
 			false,
+			responses.Resps[slug].Sort,
 		)
 		// }
 	}
