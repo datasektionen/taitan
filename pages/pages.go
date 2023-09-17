@@ -2,7 +2,6 @@ package pages
 
 import (
 	"io/ioutil"
-	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,7 +23,7 @@ type Resp struct {
 	Message   string          `json:"message"`    // Message to show at top
 	Body      string          `json:"body"`       // Main content of the page.
 	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
-	Sort      int             `json:"sort"`       // The order that the tab should appear in on the page
+	Sort      *int            `json:"sort"`       // The order that the tab should appear in on the page
 	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
 	Nav       []*Node         `json:"nav,omitempty"`
 }
@@ -36,7 +35,7 @@ type Node struct {
 	Title    string  `json:"title"`
 	Active   bool    `json:"active,omitempty"`
 	Expanded bool    `json:"expanded,omitempty"`
-	Sort     int     `json:"sort,omitempty"`
+	Sort     *int    `json:"sort,omitempty"`
 	Nav      []*Node `json:"nav,omitempty"`
 }
 
@@ -45,7 +44,7 @@ type Meta struct {
 	Image   string
 	Title   string
 	Message string
-	Sort    int
+	Sort    *int
 }
 
 // NewNode creates a new node with it's path, slug and page title.
@@ -73,7 +72,7 @@ func (n *Node) hasNode(path string) bool {
 }
 
 // AddNode adds a node to the node tree.
-func (n *Node) AddNode(root []string, p string, title string, paths []string, active bool, expanded bool, sort int) {
+func (n *Node) AddNode(root []string, p string, title string, paths []string, active bool, expanded bool, sort *int) {
 	// Yay! Create us!
 	if len(paths) == 0 {
 		n.Active = active
@@ -222,7 +221,7 @@ func parseDir(root, dir string) (*Resp, error) {
 
 	// Parse meta data from a toml file.
 	var meta = Meta{
-		Sort: math.MaxInt32, // all pages without a sort-tag should be after the pages with a sort-tag, but should keep their internal order
+		Sort: nil, // all pages without a sort-tag should be after the pages with a sort-tag, but should keep their internal order
 	}
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
 		return nil, err
