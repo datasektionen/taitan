@@ -40,6 +40,7 @@ GET /:path
 | PORT        | The port to listen to requests on                                                       |
 | TOKEN       | GitHub Personal Access Token used for authorization when pulling the content repository |
 | CONTENT_URL | The repository to get content from                                                      |
+| CONTENT_DIR | Directory to serve contents from. Setting this disables the automatic fetching using git and makes the `TOKEN` and `CONTENT_URL` unused. |
 
 ### Flags
 
@@ -48,11 +49,10 @@ GET /:path
 | -v   | Print info messages                          |
 | -vv  | Print more info messages                     |
 | -w   | Reload the contents when they change on disk |
-| -c   | Directory to serve contents from. Setting this disables the automatic fetching using git and makes the `TOKEN` and `CONTENT_URL` unused. |
 
 ## API documentation
 
-http://godoc.org/github.com/datasektionen/taitan  
+http://godoc.org/github.com/datasektionen/taitan
 http://godoc.org/github.com/datasektionen/taitan/parse
 
 ## Public domain

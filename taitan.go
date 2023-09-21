@@ -24,7 +24,6 @@ var (
 	debug      bool   // Show debug level messages.
 	info       bool   // Show info level messages.
 	watch      bool   // Watch for file changes.
-	contentDir string // Serve the `contents` instead of using git to get them from CONTENT_URL
 	responses  Atomic // Our parsed responses.
 )
 
@@ -38,7 +37,6 @@ func init() {
 	flag.BoolVar(&debug, "vv", false, "Print debug messages.")
 	flag.BoolVar(&info, "v", false, "Print info messages.")
 	flag.BoolVar(&watch, "w", false, "Watch for file changes.")
-	flag.StringVar(&contentDir, "c", "", "Serve the `contents` instead of using git to get them from CONTENT_URL")
 	flag.Usage = usage
 	flag.Parse()
 }
@@ -52,7 +50,7 @@ func getEnv(env string) string {
 }
 
 func getRoot() string {
-	if contentDir != "" {
+	if contentDir, ok := os.LookupEnv("CONTENT_DIR"); ok {
 		return contentDir
 	}
 	content := getEnv("CONTENT_URL")
@@ -66,7 +64,7 @@ func getRoot() string {
 }
 
 func getContent() {
-	if contentDir != "" {
+	if _, ok := os.LookupEnv("CONTENT_DIR"); ok {
 		return
 	}
 	content := getEnv("CONTENT_URL")
