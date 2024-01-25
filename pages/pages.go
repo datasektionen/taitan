@@ -24,6 +24,7 @@ type Resp struct {
 	Body      string          `json:"body"`       // Main content of the page.
 	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
 	Sort      *int            `json:"sort"`       // The order that the tab should appear in on the page
+	Expanded  bool            `json:"expanded"`   // Should the Nav-tree rooted in this node always be expanded one step when loaded?
 	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
 	Nav       []*Node         `json:"nav,omitempty"`
 }
@@ -41,10 +42,11 @@ type Node struct {
 
 // Meta defines the attributes to be loaded from the meta.toml file
 type Meta struct {
-	Image   string
-	Title   string
-	Message string
-	Sort    *int
+	Image    string
+	Title    string
+	Message  string
+	Sort     *int
+	Expanded bool
 }
 
 // NewNode creates a new node with it's path, slug and page title.
@@ -82,18 +84,22 @@ func (n *Node) AddNode(root []string, p string, title string, paths []string, ac
 		n.Sort = sort
 		return
 	}
+
 	// Parent folder.
 	parent := paths[0]
 
 	// Have we already created the parent?
 	if n.hasNode(parent) {
 		if len(root) == 0 {
+			if n.getNode(parent).Expanded {
+				n.getNode(parent).AddNode(root, p, title, paths[1:], false, expanded, sort)
+			}
 			return
 		}
-		if root[0] == parent {
-			n.getNode(parent).AddNode(root[1:], p, title, paths[1:], false, false, sort)
+		if root[0] == parent || n.getNode(parent).Expanded {
+			n.getNode(parent).AddNode(root[1:], p, title, paths[1:], false, expanded, sort)
 		} else if len(paths) == 1 {
-			n.getNode(parent).AddNode(root, p, title, []string{}, false, false, sort)
+			n.getNode(parent).AddNode(root, p, title, []string{}, false, expanded, sort)
 		}
 		return
 	}
@@ -105,7 +111,7 @@ func (n *Node) AddNode(root []string, p string, title string, paths []string, ac
 		title,
 		paths[1:],
 		len(root) == 1 && root[0] == parent,
-		len(root) > 1 && root[0] == parent,
+		expanded || (len(root) > 1 && root[0] == parent),
 		sort,
 	)
 }
@@ -221,7 +227,8 @@ func parseDir(root, dir string) (*Resp, error) {
 
 	// Parse meta data from a toml file.
 	var meta = Meta{
-		Sort: nil, // all pages without a sort-tag should be after the pages with a sort-tag, but should keep their internal order
+		Sort:     nil, // all pages without a sort-tag should be after the pages with a sort-tag, but should keep their internal order
+		Expanded: false,
 	}
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
 		return nil, err
@@ -237,6 +244,7 @@ func parseDir(root, dir string) (*Resp, error) {
 		Body:      body,
 		Sidebar:   sidebar,
 		Anchors:   anchs,
+		Expanded:  meta.Expanded,
 		Sort:      meta.Sort,
 	}, nil
 }
