@@ -290,7 +290,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 			responses.Resps[slug].Title,
 			strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
 			false,
-			false,
+			responses.Resps[slug].Expanded,
 			responses.Resps[slug].Sort,
 		)
 		// }
