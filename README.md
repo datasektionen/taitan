@@ -31,14 +31,14 @@ GET /:path
 }
 ```
 
-## Running
+## Running 
 
 ### Environment variables
 
 | Name        | Description                                                                             |
 |-------------|-----------------------------------------------------------------------------------------|
 | PORT        | The port to listen to requests on                                                       |
-| TOKEN       | GitHub Personal Access Token used for authorization when pulling the content repository |
+| TOKEN       | GitHub Personal Access Token used for authorization when pulling the content repository. (Only needed if the content repo is private) |
 | CONTENT_URL | The repository to get content from                                                      |
 | CONTENT_DIR | Directory to serve contents from. Setting this disables the automatic fetching using git and makes the `TOKEN` and `CONTENT_URL` unused. |
 
@@ -50,6 +50,12 @@ GET /:path
 | -vv  | Print more info messages                     |
 | -w   | Reload the contents when they change on disk |
 
+### Docker
+
+If you have docker installed, you can also run the repo using `docker-compose up --build`
+
+Make sure to copy `.env.example` to `.env` first, and populate `TOKEN` with you personal github token if needed.
+
 ## API documentation
 
 http://godoc.org/github.com/datasektionen/taitan
@@ -58,3 +64,4 @@ http://godoc.org/github.com/datasektionen/taitan/parse
 ## Public domain
 
 I hereby release this code into the [public domain](https://creativecommons.org/publicdomain/zero/1.0/).
+
