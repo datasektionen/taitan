@@ -202,13 +202,15 @@ func updateJumpFile(root string) {
 	if _, err := os.Stat(root + "/jumpfile.json"); err == nil {
 		buf, err := ioutil.ReadFile(root + "/jumpfile.json")
 		if err != nil {
-			log.Warningln("jumpfile readfile: unexpected error: %s", err)
+			log.Warningln("jumpfile readfile: unexpected error:", err)
 		}
-		err = json.Unmarshal(buf, &jumpfile)
+		var j map[string]interface{}
+		err = json.Unmarshal(buf, &j)
 		if err != nil {
-			log.Warningln("jumpfile unmarshal: unexpected error: %s", err)
+			log.Warningln("jumpfile unmarshal: unexpected error:", err)
 		}
-		log.Debugln(jumpfile)
+		log.Debugln(j)
+		jumpfile = j
 	} else {
 		log.Infoln("No jumpfile found")
 	}
