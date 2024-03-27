@@ -1,6 +1,7 @@
 package anchor
 
 import (
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -12,6 +13,7 @@ import (
 type Anchor struct {
 	ID    string `json:"id"`    // Id of h2 element.
 	Value string `json:"value"` // Value inside the anchor tag.
+	Level int    `json:"level"`
 }
 
 // Anchors finds <h1> elements inside a HTML string to create a list of anchors.
@@ -24,7 +26,7 @@ func Anchors(body string) (anchs []Anchor, err error) {
 	// Recursively find <h1> elements.
 	var findAnchors func(*html.Node)
 	findAnchors = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "h2" {
+		if n.Type == html.ElementNode && n.Data[0] == 'h' {
 			// Append valid anchors.
 			anchs = anchor(n, anchs)
 		}
@@ -44,9 +46,12 @@ func anchor(n *html.Node, anchs []Anchor) []Anchor {
 	if val == "" && id == "" {
 		return anchs
 	}
+	headerLevel, _ := strconv.Atoi(n.Data[1:])
+
 	return append(anchs, Anchor{
 		ID:    id,
 		Value: val,
+		Level: headerLevel,
 	})
 }
 
