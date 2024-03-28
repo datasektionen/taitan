@@ -26,7 +26,7 @@ func Anchors(body string) (anchs []Anchor, err error) {
 	// Recursively find <h1> elements.
 	var findAnchors func(*html.Node)
 	findAnchors = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data[0] == 'h' {
+		if isHNode(n) {
 			// Append valid anchors.
 			anchs = anchor(n, anchs)
 		}
@@ -73,4 +73,19 @@ func plain(n *html.Node) string {
 		return plain(c)
 	}
 	return ""
+}
+
+func isHNode(n *html.Node) bool {
+	if n.Type != html.ElementNode {
+		return false
+	}
+
+	tags := []string{"h1", "h2", "h3", "h4", "h5", "h6"}
+	for _, tag := range tags {
+		if tag == n.Data {
+			return true
+		}
+	}
+
+	return false
 }
