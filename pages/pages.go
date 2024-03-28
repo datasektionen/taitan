@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -175,7 +174,7 @@ func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
 
 // toHTML reads a markdown file and returns a HTML string.
 func toHTML(filename string) (string, error) {
-	buf, err := ioutil.ReadFile(filename)
+	buf, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}

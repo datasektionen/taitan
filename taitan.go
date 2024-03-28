@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,10 +20,10 @@ import (
 )
 
 var (
-	debug      bool   // Show debug level messages.
-	info       bool   // Show info level messages.
-	watch      bool   // Watch for file changes.
-	responses  Atomic // Our parsed responses.
+	debug     bool   // Show debug level messages.
+	info      bool   // Show info level messages.
+	watch     bool   // Watch for file changes.
+	responses Atomic // Our parsed responses.
 )
 
 func usage() {
@@ -200,7 +199,7 @@ func main() {
 func updateJumpFile(root string) {
 	// If jumpfile exists.
 	if _, err := os.Stat(root + "/jumpfile.json"); err == nil {
-		buf, err := ioutil.ReadFile(root + "/jumpfile.json")
+		buf, err := os.ReadFile(root + "/jumpfile.json")
 		if err != nil {
 			log.Warningln("jumpfile readfile: unexpected error:", err)
 		}

@@ -1,7 +1,6 @@
 module github.com/datasektionen/taitan
 
-// +heroku goVersion go1.15
-go 1.15
+go 1.22.1
 
 require (
 	github.com/BurntSushi/toml v0.3.1
@@ -10,3 +9,5 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 )
+
+require golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f // indirect
