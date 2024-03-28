@@ -1,11 +1,15 @@
 package pages
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/datasektionen/taitan/anchor"
+	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 
 	"github.com/BurntSushi/toml"
 	"github.com/russross/blackfriday"
@@ -41,11 +45,12 @@ type Node struct {
 
 // Meta defines the attributes to be loaded from the meta.toml file
 type Meta struct {
-	Image    string
-	Title    string
-	Message  string
-	Sort     *int
-	Expanded bool
+	Image     string
+	Title     string
+	Message   string
+	Sort      *int
+	Expanded  bool
+	Sensitive bool
 }
 
 // NewNode creates a new node with it's path, slug and page title.
@@ -125,7 +130,7 @@ func (n *Node) Num() int {
 }
 
 // Load intializes a root directory and serves all sub-folders.
-func Load(root string) (pages map[string]*Resp, err error) {
+func Load(isReception bool, root string) (pages map[string]*Resp, err error) {
 	var dirs []string
 	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
 		// We only search for article directories.
@@ -143,7 +148,7 @@ func Load(root string) (pages map[string]*Resp, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return parseDirs(root, dirs)
+	return parseDirs(isReception, root, dirs)
 }
 
 // stripRoot removes root level of a directory.
@@ -155,13 +160,16 @@ func stripRoot(root string, dir string) string {
 
 // parseDirs parses each directory into a response. Returns a map from requested
 // urls into responses.
-func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
+func parseDirs(isReception bool, root string, dirs []string) (pages map[string]*Resp, err error) {
 	pages = map[string]*Resp{}
 	for _, dir := range dirs {
-		r, err := parseDir(root, dir)
+		r, err := parseDir(isReception, root, dir)
 		if err != nil {
 			log.Warnln(err)
 			return nil, err
+		}
+		if r == nil {
+			continue
 		}
 		pages[stripRoot(root, dir)] = r
 		log.WithFields(log.Fields{
@@ -173,7 +181,7 @@ func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
 }
 
 // toHTML reads a markdown file and returns a HTML string.
-func toHTML(filename string) (string, error) {
+func toHTML(isReception bool, filename string) (string, error) {
 	buf, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
@@ -185,11 +193,75 @@ func toHTML(filename string) (string, error) {
 	buf = blackfriday.MarkdownOptions(buf, renderer, blackfriday.Options{
 		Extensions: blackfriday.EXTENSION_AUTO_HEADER_IDS | blackfriday.EXTENSION_TABLES | blackfriday.EXTENSION_FENCED_CODE,
 	})
-	return string(buf), nil
+	body := html.Node{
+		Type:     html.ElementNode,
+		DataAtom: atom.Body,
+		Data:     "body",
+	}
+	nodes, err := html.ParseFragment(bytes.NewReader(buf), &body)
+	if err != nil {
+		return "", err
+	}
+	for _, node := range nodes {
+		body.AppendChild(node)
+	}
+	var removeSensitive func(n *html.Node) []*html.Node
+	removeSensitive = func(n *html.Node) []*html.Node {
+		removeDeep := false
+		removeShallow := false
+		if n.Type == html.ElementNode && slices.ContainsFunc(n.Attr, func(a html.Attribute) bool { return a.Key == "sensitive" }) {
+			if isReception {
+				removeDeep = true
+			} else {
+				removeShallow = true
+			}
+		}
+		if n.Type == html.ElementNode && slices.ContainsFunc(n.Attr, func(a html.Attribute) bool { return a.Key == "fallback" }) {
+			if isReception {
+				removeShallow = true
+			} else {
+				removeDeep = true
+			}
+		}
+		if removeDeep {
+			return nil
+		}
+		if removeShallow {
+			var children []*html.Node
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				children = append(children, c)
+			}
+			for _, c := range children {
+				n.RemoveChild(c)
+			}
+			return children
+		}
+		var children []*html.Node
+		var newChildren []*html.Node
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			children = append(children, c)
+		}
+		for _, c := range children {
+			n.RemoveChild(c)
+			newChildren = append(newChildren, removeSensitive(c)...)
+		}
+		for _, c := range newChildren {
+			n.AppendChild(c)
+		}
+		return []*html.Node{n}
+	}
+	removeSensitive(&body)
+	var buffer bytes.Buffer
+	for node := body.FirstChild; node != nil; node = node.NextSibling {
+		if err := html.Render(&buffer, node); err != nil {
+			return "", err
+		}
+	}
+	return buffer.String(), nil
 }
 
 // parseDir creates a response for a directory.
-func parseDir(root, dir string) (*Resp, error) {
+func parseDir(isReception bool, root, dir string) (*Resp, error) {
 	log.WithField("dir", dir).Debug("Parsing directory:")
 
 	// Our content files.
@@ -200,14 +272,14 @@ func parseDir(root, dir string) (*Resp, error) {
 	)
 
 	// Parse markdown to HTML.
-	body, err := toHTML(bodyPath)
+	body, err := toHTML(isReception, bodyPath)
 	if err != nil {
 		return nil, err
 	}
 	log.WithField("body", body).Debug("HTML of body.md")
 
 	// Parse sidebar to HTML.
-	sidebar, err := toHTML(sidebarPath)
+	sidebar, err := toHTML(isReception, sidebarPath)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +303,10 @@ func parseDir(root, dir string) (*Resp, error) {
 	}
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
 		return nil, err
+	}
+
+	if meta.Sensitive && isReception {
+		return nil, nil
 	}
 
 	const iso8601DateTime = "2006-01-02T15:04:05Z"
