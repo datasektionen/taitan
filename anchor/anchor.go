@@ -10,20 +10,22 @@ import (
 
 // Anchor is a html anchor tag with an id attribute and a value. Represents: <a
 // id="Id">Value</a>
+// It is intended to link to titles in the document
 type Anchor struct {
-	ID    string `json:"id"`    // Id of h2 element.
-	Value string `json:"value"` // Value inside the anchor tag.
-	Level int    `json:"level"`
+	ID          string `json:"id"`    // Id of the h* element.
+	Value       string `json:"value"` // Value inside the anchor tag.
+	HeaderLevel int    `json:"level"` // Level of the h* element.
 }
 
-// Anchors finds <h1> elements inside a HTML string to create a list of anchors.
+// Anchors finds <h*> elements inside a HTML string to create a list of anchors.
 func Anchors(body string) (anchs []Anchor, err error) {
 	node, err := html.Parse(strings.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	anchs = make([]Anchor, 0)
-	// Recursively find <h1> elements.
+
+	// Recursively find <h*> elements.
 	var findAnchors func(*html.Node)
 	findAnchors = func(n *html.Node) {
 		if isHNode(n) {
@@ -49,9 +51,9 @@ func anchor(n *html.Node, anchs []Anchor) []Anchor {
 	headerLevel, _ := strconv.Atoi(n.Data[1:])
 
 	return append(anchs, Anchor{
-		ID:    id,
-		Value: val,
-		Level: headerLevel,
+		ID:          id,
+		Value:       val,
+		HeaderLevel: headerLevel,
 	})
 }
 
