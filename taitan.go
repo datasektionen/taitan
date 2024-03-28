@@ -148,8 +148,13 @@ func main() {
 	root := getRoot()
 	log.WithField("Root", root).Info("Our root directory")
 
+	isReception, err := getDarkmode()
+	if err != nil {
+		panic(err)
+	}
+
 	// We'll parse and store the responses ahead of time.
-	resps, err := pages.Load(root)
+	resps, err := pages.Load(isReception, root)
 	if err != nil {
 		log.Fatalf("pages.Load: unexpected error: %s", err)
 	}
@@ -179,7 +184,7 @@ func main() {
 		go func() {
 			for event := range events {
 				log.Info("event:", event)
-				resps, err := pages.Load(root)
+				resps, err := pages.Load(isReception, root)
 				if err == nil {
 					responses.Resps = resps
 				} else {
@@ -242,15 +247,21 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	if req.Header.Get("X-Github-Event") == "push" {
 		log.Infoln("Push hook")
 		getContent()
-		resps, err := pages.Load(getRoot())
-		if err == nil {
-			responses.Lock()
-			responses.Resps = resps
-			responses.Unlock()
-		} else {
+		isReception, err := getDarkmode()
+		if err != nil {
+			log.Warn("Could not get darkmode status: ", err)
+			res.WriteHeader(http.StatusNotAcceptable)
+			return
+		}
+		resps, err := pages.Load(isReception, getRoot())
+		if err != nil {
 			log.Warn("Ignoring update: ", err)
 			res.WriteHeader(http.StatusNotAcceptable)
+			return
 		}
+		responses.Lock()
+		responses.Resps = resps
+		responses.Unlock()
 
 		updateJumpFile(getRoot())
 		return
@@ -323,4 +334,35 @@ func rootDir(path string) string {
 		path = test
 	}
 	return path
+}
+
+var darkmode struct {
+	mu     sync.Mutex
+	result bool
+}
+
+func getDarkmode() (bool, error) {
+	darkmode.mu.Lock()
+	defer darkmode.mu.Unlock()
+
+	url := getEnv("DARKMODE_URL")
+	if url == "true" {
+		darkmode.result = true
+		return true, nil
+	}
+	if url == "false" {
+		darkmode.result = false
+		return false, nil
+	}
+
+	res, err := http.Get(url)
+	if err != nil {
+		return true, err
+	}
+	if err := json.NewDecoder(res.Body).Decode(&darkmode.result); err != nil {
+		return true, err
+	}
+	log.Info("Darkmode status: ", darkmode.result)
+
+	return darkmode.result, nil
 }

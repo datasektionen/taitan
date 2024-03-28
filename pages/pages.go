@@ -1,9 +1,11 @@
 package pages
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/datasektionen/taitan/anchor"
 
@@ -41,11 +43,12 @@ type Node struct {
 
 // Meta defines the attributes to be loaded from the meta.toml file
 type Meta struct {
-	Image    string
-	Title    string
-	Message  string
-	Sort     *int
-	Expanded bool
+	Image     string
+	Title     string
+	Message   string
+	Sort      *int
+	Expanded  bool
+	Sensitive bool
 }
 
 // NewNode creates a new node with it's path, slug and page title.
@@ -125,7 +128,7 @@ func (n *Node) Num() int {
 }
 
 // Load intializes a root directory and serves all sub-folders.
-func Load(root string) (pages map[string]*Resp, err error) {
+func Load(isReception bool, root string) (pages map[string]*Resp, err error) {
 	var dirs []string
 	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
 		// We only search for article directories.
@@ -143,7 +146,7 @@ func Load(root string) (pages map[string]*Resp, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return parseDirs(root, dirs)
+	return parseDirs(isReception, root, dirs)
 }
 
 // stripRoot removes root level of a directory.
@@ -155,13 +158,16 @@ func stripRoot(root string, dir string) string {
 
 // parseDirs parses each directory into a response. Returns a map from requested
 // urls into responses.
-func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
+func parseDirs(isReception bool, root string, dirs []string) (pages map[string]*Resp, err error) {
 	pages = map[string]*Resp{}
 	for _, dir := range dirs {
-		r, err := parseDir(root, dir)
+		r, err := parseDir(isReception, root, dir)
 		if err != nil {
 			log.Warnln(err)
 			return nil, err
+		}
+		if r == nil {
+			continue
 		}
 		pages[stripRoot(root, dir)] = r
 		log.WithFields(log.Fields{
@@ -173,23 +179,31 @@ func parseDirs(root string, dirs []string) (pages map[string]*Resp, err error) {
 }
 
 // toHTML reads a markdown file and returns a HTML string.
-func toHTML(filename string) (string, error) {
-	buf, err := os.ReadFile(filename)
+func toHTML(isReception bool, filename string) (string, error) {
+	rawMarkdown, err := os.ReadFile(filename)
 	if err != nil {
+		return "", err
+	}
+	t, err := template.New("").Parse(string(rawMarkdown))
+	if err != nil {
+		return "", err
+	}
+	var filteredMarkdown bytes.Buffer
+	if err := t.Execute(&filteredMarkdown, map[string]any{"reception": isReception}); err != nil {
 		return "", err
 	}
 	// Use standard HTML rendering.
 	renderer := blackfriday.HtmlRenderer(blackfriday.HTML_USE_XHTML, "", "")
 	// Parse markdown where all id's are created from the values inside
 	// the element tag.
-	buf = blackfriday.MarkdownOptions(buf, renderer, blackfriday.Options{
+	html := blackfriday.MarkdownOptions(filteredMarkdown.Bytes(), renderer, blackfriday.Options{
 		Extensions: blackfriday.EXTENSION_AUTO_HEADER_IDS | blackfriday.EXTENSION_TABLES | blackfriday.EXTENSION_FENCED_CODE,
 	})
-	return string(buf), nil
+	return string(html), nil
 }
 
 // parseDir creates a response for a directory.
-func parseDir(root, dir string) (*Resp, error) {
+func parseDir(isReception bool, root, dir string) (*Resp, error) {
 	log.WithField("dir", dir).Debug("Parsing directory:")
 
 	// Our content files.
@@ -200,14 +214,14 @@ func parseDir(root, dir string) (*Resp, error) {
 	)
 
 	// Parse markdown to HTML.
-	body, err := toHTML(bodyPath)
+	body, err := toHTML(isReception, bodyPath)
 	if err != nil {
 		return nil, err
 	}
 	log.WithField("body", body).Debug("HTML of body.md")
 
 	// Parse sidebar to HTML.
-	sidebar, err := toHTML(sidebarPath)
+	sidebar, err := toHTML(isReception, sidebarPath)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +245,10 @@ func parseDir(root, dir string) (*Resp, error) {
 	}
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
 		return nil, err
+	}
+
+	if meta.Sensitive && isReception {
+		return nil, nil
 	}
 
 	const iso8601DateTime = "2006-01-02T15:04:05Z"

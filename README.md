@@ -35,12 +35,13 @@ GET /:path
 
 ### Environment variables
 
-| Name        | Description                                                                             |
-|-------------|-----------------------------------------------------------------------------------------|
-| PORT        | The port to listen to requests on                                                       |
-| TOKEN       | GitHub Personal Access Token used for authorization when pulling the content repository. (Only needed if the content repo is private) |
-| CONTENT_URL | The repository to get content from                                                      |
-| CONTENT_DIR | Directory to serve contents from. Setting this disables the automatic fetching using git and makes the `TOKEN` and `CONTENT_URL` unused. |
+| Name         | Description                                                                                                                              |
+|--------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| PORT         | The port to listen to requests on                                                                                                        |
+| TOKEN        | GitHub Personal Access Token used for authorization when pulling the content repository. (Only needed if the content repo is private)    |
+| CONTENT_URL  | The repository to get content from                                                                                                       |
+| CONTENT_DIR  | Directory to serve contents from. Setting this disables the automatic fetching using git and makes the `TOKEN` and `CONTENT_URL` unused. |
+| DARKMODE_URL | URL to the darkmode system, or `true` or `false` to use that value instead of sending an http request.                                   |
 
 ### Flags
 
