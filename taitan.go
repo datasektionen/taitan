@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/datasektionen/taitan/fuzz"
 	"github.com/datasektionen/taitan/pages"
