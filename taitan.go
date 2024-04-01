@@ -62,9 +62,9 @@ func getRoot() string {
 	return strings.TrimSuffix(base, filepath.Ext(base))
 }
 
-func getContent() {
+func getContent() error {
 	if _, ok := os.LookupEnv("CONTENT_DIR"); ok {
-		return
+		return nil
 	}
 	content := getEnv("CONTENT_URL")
 	u, err := url.Parse(content)
@@ -77,30 +77,42 @@ func getContent() {
 
 	root := getRoot()
 	if _, err = os.Stat(root); os.IsNotExist(err) {
-		runGit("clone", []string{"clone", u.String()})
-		runGit("submodule init", []string{"-C", root, "submodule", "init"})
-		runGit("submodule update", []string{"-C", root, "submodule", "update"})
+		if err := runGit("clone", []string{"clone", u.String()}); err != nil {
+			return err
+		}
+		if err := runGit("submodule init", []string{"-C", root, "submodule", "init"}); err != nil {
+			return err
+		}
+		if err := runGit("submodule update", []string{"-C", root, "submodule", "update"}); err != nil {
+			return err
+		}
 	} else {
-		runGit("pull", []string{"-C", root, "pull"})
-		runGit("submodule update", []string{"-C", root, "submodule", "update"})
+		if err := runGit("pull", []string{"-C", root, "pull"}); err != nil {
+			return err
+		}
+		if err := runGit("submodule update", []string{"-C", root, "submodule", "update"}); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func runGit(action string, args []string) {
+func runGit(action string, args []string) error {
 	log.Infof("Found root directory - %sing updates!", action)
 	log.Debugf("Commands %#v!", args)
 	cmd := exec.Command("git", args...)
 	err := cmd.Start()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Could not start %sing: %w\n", action, err)
 	}
 	log.Infof("Waiting for git %s to finish...", action)
 	err = cmd.Wait()
 	if err != nil {
-		log.Warnf("%sed with error: %v\n", action, err)
+		return fmt.Errorf("Could not %s: %w\n", action, err)
 	}
 
 	log.Infof("Git %s finished!", action)
+	return nil
 }
 
 // setVerbosity sets the amount of messages printed.
@@ -142,8 +154,9 @@ func main() {
 	// Get port or die.
 	port := getEnv("PORT")
 
-	// Get content or die.
-	getContent()
+	if err := getContent(); err != nil {
+		panic(err)
+	}
 
 	root := getRoot()
 	log.WithField("Root", root).Info("Our root directory")
@@ -182,13 +195,9 @@ func main() {
 		defer notify.Stop(events)
 
 		go func() {
-			for event := range events {
-				log.Info("event:", event)
-				resps, err := pages.Load(isReception, root)
-				if err == nil {
-					responses.Resps = resps
-				} else {
-					log.Warn("Ignoring update: " + err.Error())
+			for range events {
+				if err := reloadContent(); err != nil {
+					log.Warningln("Could not reload content: ", err)
 				}
 			}
 		}()
@@ -244,26 +253,28 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		res.Write(buf)
 		return
 	}
+	// NOTE: we're not checking the authenticity of any of these webhooks, but
+	// since we're not getting any interesting data from them but instead
+	// pulling that from either github or darkmode (using https so we can trust
+	// that) the worst someone could do is a DOS.
 	if req.Header.Get("X-Github-Event") == "push" {
 		log.Infoln("Push hook")
-		getContent()
-		isReception, err := getDarkmode()
-		if err != nil {
-			log.Warn("Could not get darkmode status: ", err)
-			res.WriteHeader(http.StatusNotAcceptable)
+		if err := getContent(); err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		resps, err := pages.Load(isReception, getRoot())
-		if err != nil {
-			log.Warn("Ignoring update: ", err)
-			res.WriteHeader(http.StatusNotAcceptable)
+		if err := reloadContent(); err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		responses.Lock()
-		responses.Resps = resps
-		responses.Unlock()
-
-		updateJumpFile(getRoot())
+		return
+	}
+	if req.Header.Get("X-Darkmode-Event") == "updated" {
+		log.Infoln("Darkmode hook")
+		if err := reloadContent(); err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		return
 	}
 
@@ -323,6 +334,24 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	log.Debugf("Response: %#v\n", string(buf))
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	res.Write(buf)
+}
+
+func reloadContent() error {
+	isReception, err := getDarkmode()
+	if err != nil {
+		return fmt.Errorf("Could not get darkmode status: %w", err)
+	}
+	resps, err := pages.Load(isReception, getRoot())
+	if err != nil {
+		return fmt.Errorf("Could not load pages: %w", err)
+	}
+	responses.Lock()
+	responses.Resps = resps
+	responses.Unlock()
+
+	updateJumpFile(getRoot())
+
+	return nil
 }
 
 func rootDir(path string) string {
