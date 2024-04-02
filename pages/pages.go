@@ -1,9 +1,11 @@
 package pages
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/datasektionen/taitan/anchor"
 
@@ -178,18 +180,26 @@ func parseDirs(isReception bool, root string, dirs []string) (pages map[string]*
 
 // toHTML reads a markdown file and returns a HTML string.
 func toHTML(isReception bool, filename string) (string, error) {
-	buf, err := os.ReadFile(filename)
+	rawMarkdown, err := os.ReadFile(filename)
 	if err != nil {
+		return "", err
+	}
+	t, err := template.New("").Parse(string(rawMarkdown))
+	if err != nil {
+		return "", err
+	}
+	var filteredMarkdown bytes.Buffer
+	if err := t.Execute(&filteredMarkdown, map[string]any{"reception": isReception}); err != nil {
 		return "", err
 	}
 	// Use standard HTML rendering.
 	renderer := blackfriday.HtmlRenderer(blackfriday.HTML_USE_XHTML, "", "")
 	// Parse markdown where all id's are created from the values inside
 	// the element tag.
-	buf = blackfriday.MarkdownOptions(buf, renderer, blackfriday.Options{
+	html := blackfriday.MarkdownOptions(filteredMarkdown.Bytes(), renderer, blackfriday.Options{
 		Extensions: blackfriday.EXTENSION_AUTO_HEADER_IDS | blackfriday.EXTENSION_TABLES | blackfriday.EXTENSION_FENCED_CODE,
 	})
-	return string(buf), nil
+	return string(html), nil
 }
 
 // parseDir creates a response for a directory.
