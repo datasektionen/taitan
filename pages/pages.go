@@ -1,15 +1,11 @@
 package pages
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/datasektionen/taitan/anchor"
-	"golang.org/x/net/html"
-	"golang.org/x/net/html/atom"
 
 	"github.com/BurntSushi/toml"
 	"github.com/russross/blackfriday"
@@ -193,71 +189,7 @@ func toHTML(isReception bool, filename string) (string, error) {
 	buf = blackfriday.MarkdownOptions(buf, renderer, blackfriday.Options{
 		Extensions: blackfriday.EXTENSION_AUTO_HEADER_IDS | blackfriday.EXTENSION_TABLES | blackfriday.EXTENSION_FENCED_CODE,
 	})
-	body := html.Node{
-		Type:     html.ElementNode,
-		DataAtom: atom.Body,
-		Data:     "body",
-	}
-	nodes, err := html.ParseFragment(bytes.NewReader(buf), &body)
-	if err != nil {
-		return "", err
-	}
-	for _, node := range nodes {
-		body.AppendChild(node)
-	}
-	var removeSensitive func(n *html.Node) []*html.Node
-	removeSensitive = func(n *html.Node) []*html.Node {
-		removeDeep := false
-		removeShallow := false
-		if n.Type == html.ElementNode && slices.ContainsFunc(n.Attr, func(a html.Attribute) bool { return a.Key == "sensitive" }) {
-			if isReception {
-				removeDeep = true
-			} else {
-				removeShallow = true
-			}
-		}
-		if n.Type == html.ElementNode && slices.ContainsFunc(n.Attr, func(a html.Attribute) bool { return a.Key == "fallback" }) {
-			if isReception {
-				removeShallow = true
-			} else {
-				removeDeep = true
-			}
-		}
-		if removeDeep {
-			return nil
-		}
-		if removeShallow {
-			var children []*html.Node
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				children = append(children, c)
-			}
-			for _, c := range children {
-				n.RemoveChild(c)
-			}
-			return children
-		}
-		var children []*html.Node
-		var newChildren []*html.Node
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			children = append(children, c)
-		}
-		for _, c := range children {
-			n.RemoveChild(c)
-			newChildren = append(newChildren, removeSensitive(c)...)
-		}
-		for _, c := range newChildren {
-			n.AppendChild(c)
-		}
-		return []*html.Node{n}
-	}
-	removeSensitive(&body)
-	var buffer bytes.Buffer
-	for node := body.FirstChild; node != nil; node = node.NextSibling {
-		if err := html.Render(&buffer, node); err != nil {
-			return "", err
-		}
-	}
-	return buffer.String(), nil
+	return string(buf), nil
 }
 
 // parseDir creates a response for a directory.
