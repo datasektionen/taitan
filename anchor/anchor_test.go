@@ -41,9 +41,9 @@ var anchortests = []struct {
 	in2 []Anchor
 	out []Anchor
 }{
-	{s2html(`<h1 id="asdf"><b><b>plain</b></b></h1>`), []Anchor{}, []Anchor{{"asdf", "plain"}}},
-	{s2html(`<b><b></b></b>`), []Anchor{{"qwerty", "asdf"}}, []Anchor{{"qwerty", "asdf"}}},
-	{s2html(`asdf`), []Anchor{}, []Anchor{{"", "asdf"}}},
+	{s2html(`<h1 id="asdf"><b><b>plain</b></b></h1>`), []Anchor{}, []Anchor{{"asdf", "plain", 1}}},
+	{s2html(`<b><b></b></b>`), []Anchor{{"qwerty", "asdf", 1}}, []Anchor{{"qwerty", "asdf", 1}}},
+	{s2html(`asdf`), []Anchor{}, []Anchor{{"", "asdf", 1}}},
 }
 
 func TestAnchor(t *testing.T) {

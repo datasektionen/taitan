@@ -32,7 +32,7 @@ var toHTMLtests = []struct {
 
 func TestToHTML(t *testing.T) {
 	for _, tt := range toHTMLtests {
-		got, err := toHTML(tt.in)
+		got, err := toHTML(false, tt.in)
 		if err != nil {
 			log.Fatalln(err)
 		}
