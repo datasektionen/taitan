@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/datasektionen/taitan/anchor"
 
 	"github.com/BurntSushi/toml"
+	"github.com/go-git/go-git/v5"
 	"github.com/russross/blackfriday"
 	log "github.com/sirupsen/logrus"
 )
@@ -228,7 +230,8 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 	log.WithField("sidebar", sidebar).Debug("HTML of sidebar.md")
 
 	// Parse modified at.
-	fi, err := os.Stat(bodyPath)
+	commitTime := getCommitTime(filepath.Base(bodyPath))
+
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +258,7 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 	return &Resp{
 		Title:     meta.Title,
 		Slug:      filepath.Base(stripRoot(root, dir)),
-		UpdatedAt: fi.ModTime().Format(iso8601DateTime),
+		UpdatedAt: commitTime.Format(iso8601DateTime),
 		Image:     meta.Image,
 		Message:   meta.Message,
 		Body:      body,
@@ -264,4 +267,29 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 		Expanded:  meta.Expanded,
 		Sort:      meta.Sort,
 	}, nil
+}
+
+func getCommitTime(filePath string) time.Time {
+	repoPath := "."
+
+	// Open the repository
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		log.Fatalf("Failed to open repository: %v", err)
+	}
+
+	// Get the file history
+	fileHistory, err := repo.Log(&git.LogOptions{FileName: &filePath})
+	if err != nil {
+		log.Fatalf("Failed to get file history: %v", err)
+	}
+
+	// Retrieve the first commit from the file history
+	commit, err := fileHistory.Next()
+	if err != nil {
+		log.Fatalf("Failed to get file history: %v", err)
+	}
+
+	// Return the commit time
+	return commit.Committer.When
 }
