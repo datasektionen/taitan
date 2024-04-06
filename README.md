@@ -17,20 +17,33 @@ GET /:path
 
 ## Response
 
+An example response could look like this:
 ```json
 {
   "title": "Om Oss",
   "slug": "om-oss",
-  "updated_at": "2015-11-06T02:04:58Z",
-
-  "image": "unimplemented",
-
+  "updated_at": "2022-11-06T02:04:58Z",
+  "image": "https://example.com/static/hej.png",
+  "message": "hej",
   "body": "<h1>...",
   "sidebar": "<ul>...",
   "anchors": [{"id":"id", "value":"asdf"}],
+  "nav": [
+    {
+      "slug": "/om-oss",
+      "title": "Om Oss",
+      "sort": 1,
+      "active": true, 
+      "expanded": false
+    },
+    {
+      "slug": "/faq",
+      "title": "FAQ",
+      "sort": 2
+    }
+  ]
 }
 ```
-
 
 ## Running 
 
@@ -66,7 +79,7 @@ http://godoc.org/github.com/datasektionen/taitan
 
 Taitan uses path-based routing. I.e. if your content repo contains a directory `foo` with a subdirectory `bar`, you will get the content of that subdir by navigating to `<taitan url>/foo/bar`.
 
-Every directory has to contain a `meta.toml` file and a `body.md` file, the content of which are described below.
+Every directory has to contain a `meta.toml`, a `sidebar.md` and a `body.md` file, the content of which are described below.
 
 Directories starting with a `.` is ignored by taitan. (eg. `.github`).
 
@@ -85,6 +98,9 @@ The `meta.toml` files can contain the following fields:
 | Expanded  | boolean   | no        | Specifies whether all the children of of a an directory should be always be expanded when it is included in the `nav` |
 | Sensitive | string    | no        | Weather the whole page should be hidden during reception times.                                                       |
 
+### sidebar.md
+
+A markdown file that will contain content intended to render as a sidebar for a route.
 
 ### body.md
 
