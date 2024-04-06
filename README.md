@@ -66,7 +66,7 @@ If you have docker installed, you can also run the repo using `docker-compose up
 
 Make sure to copy `.env.example` to `.env` first, and populate `TOKEN` with you personal github token if needed.
 
-## Content repo structure and features
+## Content repo structure
 
 Taitan uses path-based routing. I.e. if your content repo contains a directory `foo` with a subdirectory `bar`, you will get the content of that subdir by navigating to `<taitan url>/foo/bar`.
 
