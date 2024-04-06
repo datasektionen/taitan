@@ -37,7 +37,7 @@ GET /:path
 ### Environment variables
 
 | Name         | Description                                                                                                                              |
-|--------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | PORT         | The port to listen to requests on                                                                                                        |
 | TOKEN        | GitHub Personal Access Token used for authorization when pulling the content repository. (Only needed if the content repo is private)    |
 | CONTENT_URL  | The repository to get content from                                                                                                       |
@@ -47,7 +47,7 @@ GET /:path
 ### Flags
 
 | Name | Description                                  |
-|------|----------------------------------------------|
+| ---- | -------------------------------------------- |
 | -v   | Print info messages                          |
 | -vv  | Print more info messages                     |
 | -w   | Reload the contents when they change on disk |
@@ -68,8 +68,7 @@ Taitan uses path-based routing. I.e. if your content repo contains a directory `
 
 Every directory has to contain a `meta.toml` file and a `body.md` file, the content of which are described below.
 
-Directories starting with a `.` is ignored by taitan.
-
+Directories starting with a `.` is ignored by taitan. (eg. `.github`).
 
 ### meta.toml
 
@@ -77,14 +76,14 @@ The purpose of this file is to provide meta-data that the frontend might or migh
 
 The `meta.toml` files can contain the following fields:
 
-| Name | Data type | Mandatory | Description |
-|------|-----------|-----------|-------------|
-| Title | string   | yes | The title of the page |
-| Image | string | no | Link to an image that can be used by the frontend in any way it wants |
-| Message | string | no | Specifies a string that is sent to the frontend to use as it wants |
-| Sort | int | no | A key appearing in the `nav` attribute intended for the frontend to use for the page when sorting navigation menues. |
-| Expanded | boolean | no | Specifies whether all the children of of a an directory should be always be expanded when it is included in the `nav` |
-| Sensitive | string | no | Weather the whole page should be hidden during reception times. |
+| Name      | Data type | Mandatory | Description                                                                                                           |
+| --------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
+| Title     | string    | yes       | The title of the page                                                                                                 |
+| Image     | string    | no        | Link to an image that can be used by the frontend in any way it wants                                                 |
+| Message   | string    | no        | Specifies a string that is sent to the frontend to use as it wants                                                    |
+| Sort      | int       | no        | A key appearing in the `nav` attribute intended for the frontend to use for the page when sorting navigation menues.  |
+| Expanded  | boolean   | no        | Specifies whether all the children of of a an directory should be always be expanded when it is included in the `nav` |
+| Sensitive | string    | no        | Weather the whole page should be hidden during reception times.                                                       |
 
 
 ### body.md
