@@ -62,9 +62,16 @@ An example response could look like this:
 
 ### Docker
 
-If you have docker installed, you can also run the repo using `docker-compose up --build`
+If you have docker installed, you can also run the repo using `docker compose up --build`
 
-Make sure to copy `.env.example` to `.env` first, and populate `TOKEN` with you personal github token if needed.
+Make sure to copy `.env.example` to `.env` first, and populate `TOKEN` with you personal github token if needed (if your content repo is private).
+
+## Webhooks
+
+`taitan` has two webhooks intended to keep it's content updated.
+
+* Any request with the header `X-Github-Event` set to `push` will cause `taitan` to refetch the content-repo. Meant to be called from a workflow in the content repo that is run on new commits.
+* Any request with the header `X-Darkmode-Event` set to `updated` will cause `taitan` to refetch the darkmode status from `DARKMODE_URL`.
 
 ## Content repo structure
 
@@ -87,7 +94,7 @@ The `meta.toml` files can contain the following fields:
 | Message   | string    | no        | Specifies a string that is sent to the frontend to use as it wants                                                    |
 | Sort      | int       | no        | A key appearing in the `nav` attribute intended for the frontend to use for the page when sorting navigation menues.  |
 | Expanded  | boolean   | no        | Specifies whether all the children of of a an directory should be always be expanded when it is included in the `nav` |
-| Sensitive | string    | no        | Weather the whole page should be hidden during reception times.                                                       |
+| Sensitive | string    | no        | Weather the whole page should be hidden when `DARMODE_URL` returns true.                                              |
 
 ### sidebar.md
 
@@ -115,7 +122,7 @@ some text
 more text
 
 ```
-when `DARMODE_URL` returns `true` (during reception), this will render as:
+When `DARMODE_URL` returns `true` (during reception), this will render as:
 
 ```
 some text
@@ -124,7 +131,7 @@ nothing here
 
 more text
 ```
-and if it returns `false` (the rest of the year), it will return
+If it returns `false` (the rest of the year), it will render as:
 ```
 some text
 
