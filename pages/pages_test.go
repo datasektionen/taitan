@@ -3,6 +3,7 @@ package pages
 import (
 	"log"
 	"testing"
+	"time"
 )
 
 var striptests = []struct {
@@ -24,6 +25,26 @@ func TestStripRoot(t *testing.T) {
 	}
 }
 
+var getCommitTimetests = []struct {
+	in, in2 string
+	out     time.Time
+}{
+	{"", "test/body.md", time.Unix(1447024470, 0)},
+}
+
+func TestGetCommitTime(t *testing.T) {
+	for _, tt := range getCommitTimetests {
+		got, err := getCommitTime(tt.in, tt.in2)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		if tt.out != got {
+			t.Errorf("getCommitTime(%q, %q) => %q, want %q", tt.in, tt.in2, got, tt.out)
+		}
+	}
+}
+
 var toHTMLtests = []struct {
 	in, out string
 }{
@@ -32,7 +53,7 @@ var toHTMLtests = []struct {
 
 func TestToHTML(t *testing.T) {
 	for _, tt := range toHTMLtests {
-		got, err := toHTML(tt.in)
+		got, err := toHTML(false, tt.in)
 		if err != nil {
 			log.Fatalln(err)
 		}
