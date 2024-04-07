@@ -274,8 +274,12 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 
 // getCommitTime returns last commit time for a file.
 func getCommitTime(root string, filePath string) (time.Time, error) {
+	// root/feature/main.md => feature/main.md
+
+	filePath, _ = strings.CutPrefix(filePath, fmt.Sprintf("%s\\", root))
+
 	// Execute git log
-	cmd := exec.Command("git", fmt.Sprintf("--git-dir=%s/.git", root), "log", "-n 1", "--format=%at", "--", filepath.Base(filePath))
+	cmd := exec.Command("git", fmt.Sprintf("--git-dir=%s/.git", root), "log", "-n 1", "--format=%at", "--", filePath)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
