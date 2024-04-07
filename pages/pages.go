@@ -2,8 +2,11 @@ package pages
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -11,7 +14,6 @@ import (
 	"github.com/datasektionen/taitan/anchor"
 
 	"github.com/BurntSushi/toml"
-	"github.com/go-git/go-git/v5"
 	"github.com/russross/blackfriday"
 	log "github.com/sirupsen/logrus"
 )
@@ -229,12 +231,13 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 	}
 	log.WithField("sidebar", sidebar).Debug("HTML of sidebar.md")
 
-	// Parse modified at.
-	commitTime := getCommitTime(filepath.Base(bodyPath))
+	// Get commit time
+	commitTime, err := getCommitTime(root, bodyPath)
 
 	if err != nil {
 		return nil, err
 	}
+
 	// Parse anchors in the body.
 	anchs, err := anchor.Anchors(body)
 	if err != nil {
@@ -269,27 +272,26 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 	}, nil
 }
 
-func getCommitTime(filePath string) time.Time {
-	repoPath := "."
-
-	// Open the repository
-	repo, err := git.PlainOpen(repoPath)
+// getCommitTime returns last commit time for a file.
+func getCommitTime(root string, filePath string) (time.Time, error) {
+	// Execute git log
+	cmd := exec.Command("git", fmt.Sprintf("--git-dir=%s/.git", root), "log", "-n 1", "--format=%at", "--", filepath.Base(filePath))
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("Failed to open repository: %v", err)
+		return time.Time{}, err
 	}
 
-	// Get the file history
-	fileHistory, err := repo.Log(&git.LogOptions{FileName: &filePath})
+	// Split the output into individual lines
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+
+	// Get the latest commit timestamp
+	lastCommitTimestamp, err := strconv.ParseInt(lines[0], 10, 64)
+
 	if err != nil {
-		log.Fatalf("Failed to get file history: %v", err)
+		return time.Time{}, err
 	}
 
-	// Retrieve the first commit from the file history
-	commit, err := fileHistory.Next()
-	if err != nil {
-		log.Fatalf("Failed to get file history: %v", err)
-	}
-
-	// Return the commit time
-	return commit.Committer.When
+	return time.Unix(lastCommitTimestamp, 0), nil
 }
