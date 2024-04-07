@@ -17,11 +17,14 @@ An example response to `GET /om-oss` could look like this:
 {
   "title": "Om Oss",
   "slug": "om-oss",
+  "url": "/om-oss",
   "updated_at": "2022-11-06T02:04:58Z",
   "image": "https://example.com/static/hej.png",
   "message": "hej",
   "body": "<h1>...",
   "sidebar": "<ul>...",
+  "sort": 1,
+  "expanded": false,
   "anchors": [
     {"id": "id", "value": "asdf", "level": 1},
     {"id": "foo-baz", "value": "foo baz", "level": 2}
