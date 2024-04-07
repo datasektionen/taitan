@@ -10,9 +10,9 @@ Retrieve a markdown document.
 
 GET /:path
 
-## Response
+### Response
 
-An example response could look like this:
+An example response to `GET /om-oss` could look like this:
 ```json
 {
   "title": "Om Oss",
@@ -85,7 +85,17 @@ If you have docker installed, you can also run the repo using `docker compose up
 
 Make sure to copy `.env.example` to `.env` first, and populate `TOKEN` with you personal github token if needed (if your content repo is private).
 
-Note that `CONTENT_URL` will not work with the current `compose.yml` file.
+Note that `CONTENT_DIR` will not work with the current `compose.yml` file.
+
+### Not Docker
+
+**Requires**: `golang`, `git` 
+
+Minimal setup:
+
+1. Run `go mod download`
+2. Set relevant env-variables
+3. run `go run .`
 
 ## Webhooks
 
@@ -138,7 +148,7 @@ some text
   nothing to see here :)
 {{- else -}}
   secret text
-{{- end}}
+{{- end }}
 
 more text
 
