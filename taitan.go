@@ -48,6 +48,14 @@ func getEnv(env string) string {
 	return e
 }
 
+func getEnvOptional(env string) *string {
+	e := os.Getenv(env)
+	if e == "" {
+		return nil
+	}
+	return &e
+}
+
 func getRoot() string {
 	if contentDir, ok := os.LookupEnv("CONTENT_DIR"); ok {
 		return contentDir
@@ -73,7 +81,10 @@ func getContent() error {
 	}
 
 	// https://<token>@github.com/username/repo.git
-	u.User = url.User(getEnv("TOKEN"))
+	githubToken := getEnvOptional("TOKEN")
+	if githubToken != nil {
+		u.User = url.User(*githubToken)
+	}
 
 	root := getRoot()
 	if _, err = os.Stat(root); os.IsNotExist(err) {
