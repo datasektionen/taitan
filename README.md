@@ -133,7 +133,7 @@ This is the file that will contain the html content that will be served for a ro
 some text
 
 {{ if .reception -}}
-  nothing here :)
+  nothing to see here :)
 {{- else -}}
   secret text
 {{- end}}
@@ -146,7 +146,7 @@ When `DARMODE_URL` returns `true` (during reception), this will render as:
 ```
 some text
 
-nothing here
+nothing to see here :)
 
 more text
 ```
