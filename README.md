@@ -22,23 +22,42 @@ An example response could look like this:
   "message": "hej",
   "body": "<h1>...",
   "sidebar": "<ul>...",
-  "anchors": [{"id":"id", "value":"asdf"}],
+  "anchors": [
+    {"id": "id", "value": "asdf", "level": 1},
+    {"id": "foo-baz", "value": "foo baz", "level": 2}
+  ],
   "nav": [
     {
       "slug": "/om-oss",
       "title": "Om Oss",
       "sort": 1,
       "active": true, 
-      "expanded": false
     },
     {
       "slug": "/faq",
       "title": "FAQ",
       "sort": 2
     }
+    {
+      "slug": "/foo",
+      "title": "joke",
+      "sort": 3,
+      "expanded": true,
+      "nav": [{
+        "slug": "/foo/bar",
+        "title": "baz",
+        "sort": null
+      }]
+    }
   ]
 }
 ```
+
+Some notable behaviours:
+
+* A `nav` item with `expanded` set to true is equivalent to that item containing a nested `nav`.
+* If the main `url` parameter is a nested path, that path will always appear in the `nav`-tree with `active` set to `true`, and with all its ancestor `nav`-nodes having `expanded` set to `true`.
+
 
 ## Running 
 
