@@ -41,8 +41,8 @@ func init() {
 }
 
 func getEnv(env string) string {
-	e := os.Getenv(env)
-	if e == "" {
+	e, found := os.LookupEnv(env)
+	if !found {
 		log.Fatalf("$%s environmental variable is not set.\n", env)
 	}
 	return e
@@ -73,7 +73,10 @@ func getContent() error {
 	}
 
 	// https://<token>@github.com/username/repo.git
-	u.User = url.User(getEnv("TOKEN"))
+	githubToken, tokenFound := os.LookupEnv("TOKEN")
+	if tokenFound {
+		u.User = url.User(githubToken)
+	}
 
 	root := getRoot()
 	if _, err = os.Stat(root); os.IsNotExist(err) {
