@@ -6,8 +6,11 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/rjeczalik/notify v0.9.2
 	github.com/russross/blackfriday v1.6.0
-	github.com/sirupsen/logrus v1.7.0
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
+	github.com/sirupsen/logrus v1.9.0
+	golang.org/x/net v0.22.0
 )
 
-require golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f // indirect
+require (
+	github.com/stretchr/testify v1.9.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+)

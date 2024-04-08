@@ -2,10 +2,14 @@ package pages
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/datasektionen/taitan/anchor"
 
@@ -227,11 +231,12 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 	}
 	log.WithField("sidebar", sidebar).Debug("HTML of sidebar.md")
 
-	// Parse modified at.
-	fi, err := os.Stat(bodyPath)
+	// Get commit time
+	commitTime, err := getCommitTime(root, bodyPath)
 	if err != nil {
 		return nil, err
 	}
+
 	// Parse anchors in the body.
 	anchs, err := anchor.Anchors(body)
 	if err != nil {
@@ -255,7 +260,7 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 	return &Resp{
 		Title:     meta.Title,
 		Slug:      filepath.Base(stripRoot(root, dir)),
-		UpdatedAt: fi.ModTime().Format(iso8601DateTime),
+		UpdatedAt: commitTime.Format(iso8601DateTime),
 		Image:     meta.Image,
 		Message:   meta.Message,
 		Body:      body,
@@ -264,4 +269,39 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 		Expanded:  meta.Expanded,
 		Sort:      meta.Sort,
 	}, nil
+}
+
+// getCommitTime returns last commit time for a file.
+func getCommitTime(root string, filePath string) (time.Time, error) {
+	// root/feature/main.md => feature/main.md
+	gitDir := " "
+	if root != "" {
+		gitDir = fmt.Sprintf("--git-dir=%s/.git", root)
+		filePath = filepath.Clean(strings.Replace(filePath, root+"/", "", 1))
+	}
+
+	// Execute git log
+	cmd := exec.Command("git", "log", "-n 1", "--format=%at", "--", filePath)
+	if root != "" {
+		cmd = exec.Command("git", gitDir, "log", "-n 1", "--format=%at", "--", filePath)
+	}
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	// Split the output into individual lines
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+
+	// Get the latest commit timestamp
+	lastCommitTimestamp, err := strconv.ParseInt(lines[0], 10, 64)
+
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Unix(lastCommitTimestamp, 0), nil
 }
