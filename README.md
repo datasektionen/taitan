@@ -31,16 +31,10 @@ An example response to `GET /om-oss` could look like this:
   ],
   "nav": [
     {
-      "slug": "/om-oss",
-      "title": "Om Oss",
-      "sort": 1,
-      "active": true, 
-    },
-    {
       "slug": "/faq",
       "title": "FAQ",
       "sort": 2
-    }
+    },
     {
       "slug": "/foo",
       "title": "joke",
@@ -51,6 +45,12 @@ An example response to `GET /om-oss` could look like this:
         "title": "baz",
         "sort": null
       }]
+    },
+    {
+      "slug": "/om-oss",
+      "title": "Om Oss",
+      "sort": 1,
+      "active": true
     }
   ]
 }
@@ -60,7 +60,7 @@ Some notable behaviours:
 
 * A `nav` item with `expanded` set to true is equivalent to that item containing a nested `nav`.
 * If the main `url` parameter is a nested path, that path will always appear in the `nav`-tree with `active` set to `true`, and with all its ancestor `nav`-nodes having `expanded` set to `true`.
-
+* `anchors` will contain a list of all heading tags in the page, with `level` indicating weather it is a `<h1>`, `<h2>`, `<h3>`, etc.
 
 ## Running 
 
@@ -96,7 +96,7 @@ Note that `CONTENT_DIR` will not work with the current `compose.yml` file.
 
 Minimal setup:
 
-1. Run `go mod download`
+1. Run `go mod vendor`
 2. Set relevant env-variables
 3. run `go run .`
 
