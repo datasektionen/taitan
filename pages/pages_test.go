@@ -29,7 +29,7 @@ var getCommitTimetests = []struct {
 	in, in2 string
 	out     time.Time
 }{
-	{"", "test/body.md", time.Unix(1447024470, 0)},
+	{"..", "pages/test/body.md", time.Unix(1447024470, 0)},
 }
 
 func TestGetCommitTime(t *testing.T) {

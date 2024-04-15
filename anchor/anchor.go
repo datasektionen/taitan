@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
 
@@ -29,8 +28,16 @@ func Anchors(body string) (anchs []Anchor, err error) {
 	var findAnchors func(*html.Node)
 	findAnchors = func(n *html.Node) {
 		if isHNode(n) {
-			// Append valid anchors.
-			anchs = anchor(n, anchs)
+			id := findIDAttr(n.Attr)
+			val := plain(n)
+			if id != "" && val != "" {
+				headerLevel, _ := strconv.Atoi(n.Data[1:])
+				anchs = append(anchs, Anchor{
+					ID:          id,
+					Value:       val,
+					HeaderLevel: headerLevel,
+				})
+			}
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			findAnchors(c)
@@ -40,24 +47,7 @@ func Anchors(body string) (anchs []Anchor, err error) {
 	return anchs, nil
 }
 
-// anchor appends valid anchors to anchs.
-func anchor(n *html.Node, anchs []Anchor) []Anchor {
-	log.WithField("attrs", n.Attr).Debug("Found potential anchor (<h2>)")
-	id := findAttr("id", n.Attr)
-	val := plain(n)
-	if val == "" && id == "" {
-		return anchs
-	}
-	headerLevel, _ := strconv.Atoi(n.Data[1:])
-
-	return append(anchs, Anchor{
-		ID:          id,
-		Value:       val,
-		HeaderLevel: headerLevel,
-	})
-}
-
-func findAttr(key string, attrs []html.Attribute) string {
+func findIDAttr(attrs []html.Attribute) string {
 	for _, attr := range attrs {
 		if attr.Key == "id" {
 			return attr.Val

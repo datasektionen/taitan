@@ -2,8 +2,8 @@ package anchor
 
 import (
 	"bytes"
-	"fmt"
 	"log"
+	"slices"
 	"testing"
 
 	"golang.org/x/net/html"
@@ -37,39 +37,41 @@ func TestPlain(t *testing.T) {
 }
 
 var anchortests = []struct {
-	in  *html.Node
-	in2 []Anchor
+	in  string
 	out []Anchor
 }{
-	{s2html(`<h1 id="asdf"><b><b>plain</b></b></h1>`), []Anchor{}, []Anchor{{"asdf", "plain", 1}}},
-	{s2html(`<b><b></b></b>`), []Anchor{{"qwerty", "asdf", 1}}, []Anchor{{"qwerty", "asdf", 1}}},
-	{s2html(`asdf`), []Anchor{}, []Anchor{{"", "asdf", 1}}},
+	{`<h1 id="asdf"><b><b>plain</b></b></h1>`, []Anchor{{"asdf", "plain", 1}}},
+	{`<b><b></b></b>`, []Anchor{}},
+	{`asdf`, []Anchor{}},
+	{`<h2 id="bing"><span style="color: red;">chilling</h2>`, []Anchor{{"bing", "chilling", 2}}},
 }
 
-func TestAnchor(t *testing.T) {
+func TestAnchors(t *testing.T) {
 	for _, tt := range anchortests {
-		got := anchor(tt.in, tt.in2)
-		if fmt.Sprintf("%#v\n", got) != fmt.Sprintf("%#v\n", tt.out) {
-			t.Errorf("anchor(%v, []Anchor{}) => %q, want %q", tt.in, got, tt.out)
+		got, err := Anchors(tt.in)
+		if err != nil {
+			t.Errorf("anchor(%v) returned error %q", tt.in, err)
+		}
+		if !slices.Equal(got, tt.out) {
+			t.Errorf("anchor(%v) => %q, want %q", tt.in, got, tt.out)
 		}
 	}
 }
 
 var findattrtests = []struct {
-	in  string
-	in2 []html.Attribute
+	in  []html.Attribute
 	out string
 }{
-	{"id", []html.Attribute{}, ""},
-	{"id", []html.Attribute{{Key: "id", Val: "asdf"}}, "asdf"},
-	{"id", []html.Attribute{{Key: "class", Val: "qwerty"}, {Key: "id", Val: "asdf"}}, "asdf"},
+	{[]html.Attribute{}, ""},
+	{[]html.Attribute{{Key: "id", Val: "asdf"}}, "asdf"},
+	{[]html.Attribute{{Key: "class", Val: "qwerty"}, {Key: "id", Val: "asdf"}}, "asdf"},
 }
 
-func TestFindAttr(t *testing.T) {
+func TestFindIDAttr(t *testing.T) {
 	for _, tt := range findattrtests {
-		got := findAttr(tt.in, tt.in2)
+		got := findIDAttr(tt.in)
 		if got != tt.out {
-			t.Errorf("findAttr(%v, %v) => %q, want %q", tt.in, tt.in2, got, tt.out)
+			t.Errorf("findAttr(%v) => %q, want %q", tt.in, got, tt.out)
 		}
 	}
 }
