@@ -273,32 +273,23 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 
 // getCommitTime returns last commit time for a file.
 func getCommitTime(root string, filePath string) (time.Time, error) {
-	// root/feature/main.md => feature/main.md
-	gitDir := " "
-	if root != "" {
-		gitDir = fmt.Sprintf("--git-dir=%s/.git", root)
-		filePath = filepath.Clean(strings.Replace(filePath, root+"/", "", 1))
-	}
+	gitDir := fmt.Sprintf("--git-dir=%s/.git", root)
+	// root/page/body.md => page/body.md
+	filePath = filepath.Clean(strings.TrimPrefix(filePath, root+"/"))
 
-	// Execute git log
-	cmd := exec.Command("git", "log", "-n 1", "--format=%at", "--", filePath)
-	if root != "" {
-		cmd = exec.Command("git", gitDir, "log", "-n 1", "--format=%at", "--", filePath)
-	}
+	cmd := exec.Command("git", gitDir, "log", "-n1", "--format=%at", "--", filePath)
 
-	var out bytes.Buffer
-	cmd.Stdout = &out
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
+		log.Printf("Git failed. Stderr: %s", strings.TrimSpace(stderr.String()))
 		return time.Time{}, err
 	}
 
-	// Split the output into individual lines
-	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
-
-	// Get the latest commit timestamp
-	lastCommitTimestamp, err := strconv.ParseInt(lines[0], 10, 64)
-
+	lastCommitTimestamp, err := strconv.ParseInt(strings.TrimSpace(stdout.String()), 10, 64)
 	if err != nil {
 		return time.Time{}, err
 	}

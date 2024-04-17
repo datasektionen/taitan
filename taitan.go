@@ -80,27 +80,27 @@ func getContent() error {
 
 	root := getRoot()
 	if _, err = os.Stat(root); os.IsNotExist(err) {
-		if err := runGit("clone", []string{"clone", u.String()}); err != nil {
+		if err := runGit("clone", "clone", u.String()); err != nil {
 			return err
 		}
-		if err := runGit("submodule init", []string{"-C", root, "submodule", "init"}); err != nil {
+		if err := runGit("submodule init", "-C", root, "submodule", "init"); err != nil {
 			return err
 		}
-		if err := runGit("submodule update", []string{"-C", root, "submodule", "update"}); err != nil {
+		if err := runGit("submodule update", "-C", root, "submodule", "update"); err != nil {
 			return err
 		}
 	} else {
-		if err := runGit("pull", []string{"-C", root, "pull"}); err != nil {
+		if err := runGit("pull", "-C", root, "pull"); err != nil {
 			return err
 		}
-		if err := runGit("submodule update", []string{"-C", root, "submodule", "update"}); err != nil {
+		if err := runGit("submodule update", "-C", root, "submodule", "update"); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func runGit(action string, args []string) error {
+func runGit(action string, args ...string) error {
 	log.Infof("Found root directory - %sing updates!", action)
 	log.Debugf("Commands %#v!", args)
 	cmd := exec.Command("git", args...)
@@ -245,7 +245,9 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	}
 	if req.URL.Path == "/fuzzyfile" {
 		log.Info("Fuzzyfile")
+		responses.Lock()
 		buf, err := json.Marshal(fuzz.NewFile(responses.Resps))
+		responses.Unlock()
 		if err != nil {
 			log.Warnf("handler: unexpected error: %#v\n", err)
 			res.WriteHeader(http.StatusInternalServerError)
@@ -289,8 +291,8 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	log.WithField("clean", clean).Info("Sanitized path")
 	log.Println(rootDir(clean))
 	responses.Lock()
+	defer responses.Unlock()
 	r, ok := responses.Resps[clean]
-	responses.Unlock()
 	if !ok {
 		log.WithField("page", clean).Warn("Page doesn't exist")
 		res.WriteHeader(http.StatusNotFound)
