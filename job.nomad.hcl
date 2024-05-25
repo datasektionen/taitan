@@ -39,6 +39,10 @@ ENV
         destination = "local/.env"
         env         = true
       }
+
+      resources {
+        memory = 30
+      }
     }
   }
 
@@ -79,6 +83,10 @@ TOKEN={{ with nomadVar "nomad/jobs/taitan" }}{{ .styrdokument_token }}{{ end }}
 ENV
         destination = "local/.env"
         env         = true
+      }
+
+      resources {
+        memory = 30
       }
     }
   }
