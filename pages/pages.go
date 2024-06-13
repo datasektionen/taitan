@@ -228,6 +228,7 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 	anchorsLists := make(LangAnchorLookup)
 	bodyReg := regexp.MustCompile(bodyPattern)
 	sidebarReg := regexp.MustCompile(sidebarPattern)
+	titleReg := regexp.MustCompile(titlePattern)
 
 	stuff, err := os.ReadDir(dir)
 
@@ -273,6 +274,7 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 
 	// Parse meta data from a toml file.
 	metaPath := filepath.Join(dir, metaFile)
+	var metaMap = make(map[string]string)
 	var meta = Meta{
 		Sort:     nil, // all pages without a sort-tag should be after the pages with a sort-tag, but should keep their internal order
 		Expanded: false,
@@ -280,9 +282,21 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
 		return nil, err
 	}
+	if _, err := toml.DecodeFile(metaPath, &metaMap); err != nil {
+		return nil, err
+	}
 
 	if meta.Sensitive && isReception {
 		return nil, nil
+	}
+	for k, v := range metaMap {
+		if match := titleReg.FindSubmatch([]byte(k)); match != nil {
+			lang := ""
+			if len(match) > 1 {
+				lang = string(match[1][:])
+			}
+			titles[lang] = v
+		}
 	}
 
 	return &RespStore{
