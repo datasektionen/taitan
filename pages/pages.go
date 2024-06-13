@@ -24,17 +24,17 @@ type LangAnchorLookup map[string][]anchor.Anchor
 
 // TODO: Better type name
 type RespStore struct {
-	Titles    LangLookup                 // Human-readable title.
-	Slug      string                     // URL-slug.
-	URL       string                     // Actual url?
-	UpdatedAt LangLookup                 // Page update time.
-	Image     string                     // Path/URL/Placeholder to image.
-	Message   string                     // Message to show at top
-	Bodies    LangLookup                 // Main content of the page.
-	Sidebars  LangLookup                 // The sidebar of the page.
-	Sort      *int                       // The order that the tab should appear in on the page
-	Expanded  bool                       // Should the Nav-tree rooted in this node always be expanded one step when loaded?
-	Anchors   map[string][]anchor.Anchor // The list of anchors to headers in the body.
+	Titles    LangLookup       // Human-readable title.
+	Slug      string           // URL-slug.
+	URL       string           // Actual url?
+	UpdatedAt LangLookup       // Page update time.
+	Image     string           // Path/URL/Placeholder to image.
+	Message   string           // Message to show at top
+	Bodies    LangLookup       // Main content of the page.
+	Sidebars  LangLookup       // The sidebar of the page.
+	Sort      *int             // The order that the tab should appear in on the page
+	Expanded  bool             // Should the Nav-tree rooted in this node always be expanded one step when loaded?
+	Anchors   LangAnchorLookup // The list of anchors to headers in the body.
 }
 
 // Node is a recursive node in a page tree.
@@ -221,10 +221,11 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 		iso8601DateTime = "2006-01-02T15:04:05Z"
 	)
 
-	bodyMap := make(LangLookup)
-	sidebarMap := make(LangLookup)
-	commitMap := make(LangLookup)
-	anchorsMap := make(map[string][]anchor.Anchor)
+	bodies := make(LangLookup)
+	sidebars := make(LangLookup)
+	commitTimes := make(LangLookup)
+	titles := make(LangLookup)
+	anchorsLists := make(LangAnchorLookup)
 	bodyReg := regexp.MustCompile(bodyPattern)
 	sidebarReg := regexp.MustCompile(sidebarPattern)
 
@@ -238,8 +239,8 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 			if len(match) > 1 {
 				lang = string(match[1][:])
 			}
-			bodyMap[lang], err = toHTML(isReception, filePath)
-			log.WithField("body", bodyMap[lang]).Debug("HTML of body_" + lang + ".md")
+			bodies[lang], err = toHTML(isReception, filePath)
+			log.WithField("body", bodies[lang]).Debug("HTML of body_" + lang + ".md")
 			if err != nil {
 				return nil, err
 			}
@@ -248,10 +249,10 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 			if err != nil {
 				return nil, err
 			}
-			commitMap[lang] = commitTime.Format(iso8601DateTime)
+			commitTimes[lang] = commitTime.Format(iso8601DateTime)
 
 			// Parse anchors in the body.
-			anchorsMap[lang], err = anchor.Anchors(bodyMap[lang])
+			anchorsLists[lang], err = anchor.Anchors(bodies[lang])
 			if err != nil {
 				return nil, err
 			}
@@ -262,8 +263,8 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 			if len(match) > 1 {
 				lang = string(match[1][:])
 			}
-			sidebarMap[lang], err = toHTML(isReception, filePath)
-			log.WithField("sidebar", sidebarMap[lang]).Debug("HTML of sidebar" + lang + ".md")
+			sidebars[lang], err = toHTML(isReception, filePath)
+			log.WithField("sidebar", sidebars[lang]).Debug("HTML of sidebar" + lang + ".md")
 			if err != nil {
 				return nil, err
 			}
@@ -285,14 +286,14 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 	}
 
 	return &RespStore{
-		Titles:    meta.Title,
+		Titles:    titles,
 		Slug:      filepath.Base(stripRoot(root, dir)),
-		UpdatedAt: commitMap,
+		UpdatedAt: commitTimes,
 		Image:     meta.Image,
 		Message:   meta.Message,
-		Bodies:    bodyMap,
-		Sidebars:  sidebarMap,
-		Anchors:   anchorsMap,
+		Bodies:    bodies,
+		Sidebars:  sidebars,
+		Anchors:   anchorsLists,
 		Expanded:  meta.Expanded,
 		Sort:      meta.Sort,
 	}, nil
