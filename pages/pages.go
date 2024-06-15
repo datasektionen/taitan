@@ -214,9 +214,9 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 	log.WithField("dir", dir).Debug("Parsing directory:")
 
 	const (
-		bodyPattern     = "body(_\\w[2])?.md"
-		sidebarPattern  = "sidebar(_\\w[2])?.md"
-		titlePattern    = "Title(_\\w[2])?"
+		bodyPattern     = "body(_\\w{2})?\\.md"
+		sidebarPattern  = "sidebar(_\\w{2})?\\.md"
+		titlePattern    = "Title(_\\w{2})?"
 		metaFile        = "meta.toml"
 		iso8601DateTime = "2006-01-02T15:04:05Z"
 	)
@@ -237,11 +237,12 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 
 		if match := bodyReg.FindSubmatch([]byte(file.Name())); match != nil {
 			lang := ""
-			if len(match) > 1 {
-				lang = string(match[1][:])
+			if len(match) > 1 && len(match[1]) > 0 {
+				lang = string(match[1][1:])
 			}
 			bodies[lang], err = toHTML(isReception, filePath)
 			log.WithField("body", bodies[lang]).Debug("HTML of body_" + lang + ".md")
+
 			if err != nil {
 				return nil, err
 			}
@@ -261,8 +262,8 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 
 		if match := sidebarReg.FindSubmatch([]byte(file.Name())); match != nil {
 			lang := ""
-			if len(match) > 1 {
-				lang = string(match[1][:])
+			if len(match) > 1 && len(match[1]) > 0 {
+				lang = string(match[1][1:])
 			}
 			sidebars[lang], err = toHTML(isReception, filePath)
 			log.WithField("sidebar", sidebars[lang]).Debug("HTML of sidebar" + lang + ".md")
@@ -274,11 +275,11 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 
 	// Parse meta data from a toml file.
 	metaPath := filepath.Join(dir, metaFile)
-	var metaMap = make(map[string]string)
 	var meta = Meta{
 		Sort:     nil, // all pages without a sort-tag should be after the pages with a sort-tag, but should keep their internal order
 		Expanded: false,
 	}
+	var metaMap = make(map[string]any)
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
 		return nil, err
 	}
@@ -291,11 +292,15 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 	}
 	for k, v := range metaMap {
 		if match := titleReg.FindSubmatch([]byte(k)); match != nil {
-			lang := ""
-			if len(match) > 1 {
-				lang = string(match[1][:])
+			switch v.(type) {
+			case string:
+				lang := ""
+				if len(match) > 1 && len(match[1]) > 0 {
+					log.Println(match)
+					lang = string(match[1][1:])
+				}
+				titles[lang] = v.(string)
 			}
-			titles[lang] = v
 		}
 	}
 

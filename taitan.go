@@ -260,6 +260,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		log.Infoln("Redirect: " + newURL)
 		return
 	}
+
 	if req.URL.Path == "/fuzzyfile" {
 		log.Info("Fuzzyfile")
 		responses.Lock()
@@ -300,6 +301,8 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	lang := req.URL.Query().Get("lang")
+
 	// Requested URL. We extract the path.
 	query := req.URL.Path
 	log.WithField("query", query).Info("Received query")
@@ -315,8 +318,6 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
-
-	lang := req.URL.Query().Get("lang")
 
 	// Sort the slugs
 	var slugs []string
