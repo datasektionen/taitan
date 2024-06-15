@@ -327,6 +327,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 
 	// Our web tree.
 	root := pages.NewNode("/", "/", responses.Resps["/"].Titles[lang])
+
 	for _, slug := range slugs {
 		root.AddNode(
 			strings.FieldsFunc(clean, func(c rune) bool { return c == '/' }),
@@ -358,7 +359,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	log.Info("Marshaling the response.")
-	buf, err := json.Marshal(r)
+	buf, err := json.Marshal(resp)
 	if err != nil {
 		log.Warnf("handler: unexpected error: %#v\n", err)
 		res.WriteHeader(http.StatusInternalServerError)
