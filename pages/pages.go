@@ -249,9 +249,10 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 
 			commitTime, err := getCommitTime(root, filePath)
 			if err != nil {
-				return nil, err
+				commitTimes[lang] = time.Now().Format(iso8601DateTime)
+			} else {
+				commitTimes[lang] = commitTime.Format(iso8601DateTime)
 			}
-			commitTimes[lang] = commitTime.Format(iso8601DateTime)
 
 			// Parse anchors in the body.
 			anchorsLists[lang], err = anchor.Anchors(bodies[lang])
