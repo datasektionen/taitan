@@ -249,6 +249,26 @@ type Resp struct {
 	Nav       []*pages.Node   `json:"nav,omitempty"`
 }
 
+func responseExistForLang(resp *pages.RespStore, lang string) bool {
+	if _, ok := resp.Titles[lang]; !ok {
+		return false
+	}
+	if _, ok := resp.UpdatedAt[lang]; !ok {
+		return false
+	}
+	if _, ok := resp.Bodies[lang]; !ok {
+		return false
+	}
+	if _, ok := resp.Sidebars[lang]; !ok {
+		return false
+	}
+	if _, ok := resp.Anchors[lang]; !ok {
+		return false
+	}
+
+	return true
+}
+
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("Access-Control-Allow-Origin", "*")
@@ -315,13 +335,22 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	log.Println(rootDir(clean))
 	responses.Lock()
 	defer responses.Unlock()
+
 	r, ok := responses.Resps[clean]
 	if !ok {
 		log.WithField("page", clean).Warn("Page doesn't exist")
 		res.WriteHeader(http.StatusNotFound)
+		res.Write([]byte("Page does not exist"))
 		return
 	}
 
+	// If the page does not hve complete information for a language, it can't create a response
+	if !responseExistForLang(r, lang) {
+		log.WithField("page", clean).Warn("Page doesn't exist for requested language")
+		res.WriteHeader(http.StatusNotFound)
+		res.Write([]byte("Page does not exist for the requested language"))
+		return
+	}
 	// Sort the slugs
 	var slugs []string
 	for k := range responses.Resps {
