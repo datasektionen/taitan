@@ -302,6 +302,9 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	lang := req.URL.Query().Get("lang")
+	if lang == "" {
+		lang = getEnv("DEFAULT_LANG")
+	}
 
 	// Requested URL. We extract the path.
 	query := req.URL.Path

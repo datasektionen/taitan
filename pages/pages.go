@@ -214,9 +214,9 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 	log.WithField("dir", dir).Debug("Parsing directory:")
 
 	const (
-		bodyPattern     = "body(_\\w{2})?\\.md"
-		sidebarPattern  = "sidebar(_\\w{2})?\\.md"
-		titlePattern    = "Title(_\\w{2})?"
+		bodyPattern     = "body(_\\w+)\\.md"
+		sidebarPattern  = "sidebar(_\\w+)\\.md"
+		titlePattern    = "Title(_\\w+)"
 		metaFile        = "meta.toml"
 		iso8601DateTime = "2006-01-02T15:04:05Z"
 	)
