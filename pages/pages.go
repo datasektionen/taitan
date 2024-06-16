@@ -221,33 +221,38 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 		iso8601DateTime = "2006-01-02T15:04:05Z"
 	)
 
+	bodyReg := regexp.MustCompile(bodyPattern)
+	sidebarReg := regexp.MustCompile(sidebarPattern)
+	titleReg := regexp.MustCompile(titlePattern)
+
 	bodies := make(LangLookup)
 	sidebars := make(LangLookup)
 	commitTimes := make(LangLookup)
 	titles := make(LangLookup)
 	anchorsLists := make(LangAnchorLookup)
-	bodyReg := regexp.MustCompile(bodyPattern)
-	sidebarReg := regexp.MustCompile(sidebarPattern)
-	titleReg := regexp.MustCompile(titlePattern)
 
-	stuff, err := os.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 
-	for _, file := range stuff {
-		filePath := filepath.Join(dir, file.Name())
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
 
-		if match := bodyReg.FindSubmatch([]byte(file.Name())); match != nil {
+		entryPath := filepath.Join(dir, entry.Name())
+
+		if match := bodyReg.FindSubmatch([]byte(entry.Name())); match != nil {
 			lang := ""
 			if len(match) > 1 && len(match[1]) > 0 {
 				lang = string(match[1][1:])
 			}
-			bodies[lang], err = toHTML(isReception, filePath)
+			bodies[lang], err = toHTML(isReception, entryPath)
 			log.WithField("body", bodies[lang]).Debug("HTML of body_" + lang + ".md")
 
 			if err != nil {
 				return nil, err
 			}
 
-			commitTime, err := getCommitTime(root, filePath)
+			commitTime, err := getCommitTime(root, entryPath)
 			if err != nil {
 				commitTimes[lang] = time.Now().Format(iso8601DateTime)
 			} else {
@@ -261,12 +266,12 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 			}
 		}
 
-		if match := sidebarReg.FindSubmatch([]byte(file.Name())); match != nil {
+		if match := sidebarReg.FindSubmatch([]byte(entry.Name())); match != nil {
 			lang := ""
 			if len(match) > 1 && len(match[1]) > 0 {
 				lang = string(match[1][1:])
 			}
-			sidebars[lang], err = toHTML(isReception, filePath)
+			sidebars[lang], err = toHTML(isReception, entryPath)
 			log.WithField("sidebar", sidebars[lang]).Debug("HTML of sidebar" + lang + ".md")
 			if err != nil {
 				return nil, err
@@ -297,7 +302,6 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 			case string:
 				lang := ""
 				if len(match) > 1 && len(match[1]) > 0 {
-					log.Println(match)
 					lang = string(match[1][1:])
 				}
 				titles[lang] = v.(string)
