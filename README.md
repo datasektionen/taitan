@@ -73,6 +73,7 @@ Some notable behaviours:
 | CONTENT_URL  | The repository to get content from                                                                                                       |
 | CONTENT_DIR  | Directory to serve contents from. Setting this disables the automatic fetching using git and makes the `TOKEN` and `CONTENT_URL` unused. |
 | DARKMODE_URL | URL to the darkmode system, or `true` or `false` to use that value instead of sending an http request.                                   |
+| DEFAULT_LANG |  The default language code that will be used for responses if a `lang` parameter is not passed in an API request.                        |
 
 ### Flags
 

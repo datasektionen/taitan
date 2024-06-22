@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/datasektionen/taitan/anchor"
 	"github.com/datasektionen/taitan/fuzz"
 	"github.com/datasektionen/taitan/pages"
 	"github.com/rjeczalik/notify"
@@ -133,7 +134,7 @@ func setVerbosity() {
 // Atomic responses.
 type Atomic struct {
 	sync.Mutex
-	Resps map[string]*pages.Resp
+	Resps map[string]*pages.Page
 }
 
 func validRoot(root string) {
@@ -232,6 +233,42 @@ func updateJumpFile(root string) {
 	}
 }
 
+// Resp is the response we serve for file queries.
+type Resp struct {
+	Title     string          `json:"title"` // Human-readable title.
+	Slug      string          `json:"slug"`  // URL-slug.
+	URL       string          `json:"url"`
+	UpdatedAt string          `json:"updated_at"` // Body update time.
+	Image     string          `json:"image"`      // Path/URL/Placeholder to image.
+	Message   string          `json:"message"`    // Message to show at top
+	Body      string          `json:"body"`       // Main content of the page.
+	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
+	Sort      *int            `json:"sort"`       // The order that the tab should appear in on the page
+	Expanded  bool            `json:"expanded"`   // Should the Nav-tree rooted in this node always be expanded one step when loaded?
+	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
+	Nav       []*pages.Node   `json:"nav,omitempty"`
+}
+
+func responseExistForLang(resp *pages.Page, lang string) bool {
+	if _, ok := resp.Titles[lang]; !ok {
+		return false
+	}
+	if _, ok := resp.UpdatedAt[lang]; !ok {
+		return false
+	}
+	if _, ok := resp.Bodies[lang]; !ok {
+		return false
+	}
+	if _, ok := resp.Sidebars[lang]; !ok {
+		return false
+	}
+	if _, ok := resp.Anchors[lang]; !ok {
+		return false
+	}
+
+	return true
+}
+
 // handler parses and serves responses to our file queries.
 func handler(res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("Access-Control-Allow-Origin", "*")
@@ -243,6 +280,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		log.Infoln("Redirect: " + newURL)
 		return
 	}
+
 	if req.URL.Path == "/fuzzyfile" {
 		log.Info("Fuzzyfile")
 		responses.Lock()
@@ -283,6 +321,11 @@ func handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	lang := req.URL.Query().Get("lang")
+	if lang == "" {
+		lang = getEnv("DEFAULT_LANG")
+	}
+
 	// Requested URL. We extract the path.
 	query := req.URL.Path
 	log.WithField("query", query).Info("Received query")
@@ -292,13 +335,22 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	log.Println(rootDir(clean))
 	responses.Lock()
 	defer responses.Unlock()
+
 	r, ok := responses.Resps[clean]
 	if !ok {
 		log.WithField("page", clean).Warn("Page doesn't exist")
 		res.WriteHeader(http.StatusNotFound)
+		res.Write([]byte("Page does not exist"))
 		return
 	}
 
+	// If the page does not hve complete information for a language, it can't create a response
+	if !responseExistForLang(r, lang) {
+		log.WithField("page", clean).Warn("Page doesn't exist for requested language")
+		res.WriteHeader(http.StatusNotFound)
+		res.Write([]byte("Page does not exist for the requested language"))
+		return
+	}
 	// Sort the slugs
 	var slugs []string
 	for k := range responses.Resps {
@@ -307,29 +359,40 @@ func handler(res http.ResponseWriter, req *http.Request) {
 	sort.Strings(slugs)
 
 	// Our web tree.
-	root := pages.NewNode("/", "/", responses.Resps["/"].Title)
+	root := pages.NewNode("/", "/", responses.Resps["/"].Titles[lang])
+
 	for _, slug := range slugs {
-		// if strings.HasPrefix(slug, filepath.Dir(clean)) {
 		root.AddNode(
 			strings.FieldsFunc(clean, func(c rune) bool { return c == '/' }),
 			slug,
-			responses.Resps[slug].Title,
+			responses.Resps[slug].Titles[lang],
 			strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
 			false,
 			responses.Resps[slug].Expanded,
 			responses.Resps[slug].Sort,
 		)
-		// }
 	}
-	r.URL = clean
-	if root.Num() == 1 {
-		r.Nav = nil
-	} else {
-		r.Nav = root.Nav
+
+	resp := Resp{
+		URL:       clean,
+		Nav:       nil,
+		Title:     r.Titles[lang],
+		Body:      r.Bodies[lang],
+		Sidebar:   r.Sidebars[lang],
+		Slug:      r.Slug,
+		Image:     r.Image,
+		UpdatedAt: r.UpdatedAt[lang],
+		Message:   r.Message,
+		Sort:      r.Sort,
+		Expanded:  r.Expanded,
+		Anchors:   r.Anchors[lang],
+	}
+	if root.Num() != 1 {
+		resp.Nav = root.Nav
 	}
 
 	log.Info("Marshaling the response.")
-	buf, err := json.Marshal(r)
+	buf, err := json.Marshal(resp)
 	if err != nil {
 		log.Warnf("handler: unexpected error: %#v\n", err)
 		res.WriteHeader(http.StatusInternalServerError)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -18,20 +19,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Resp is the response we serve for file queries.
-type Resp struct {
-	Title     string          `json:"title"` // Human-readable title.
-	Slug      string          `json:"slug"`  // URL-slug.
-	URL       string          `json:"url"`
-	UpdatedAt string          `json:"updated_at"` // Body update time.
-	Image     string          `json:"image"`      // Path/URL/Placeholder to image.
-	Message   string          `json:"message"`    // Message to show at top
-	Body      string          `json:"body"`       // Main content of the page.
-	Sidebar   string          `json:"sidebar"`    // The sidebar of the page.
-	Sort      *int            `json:"sort"`       // The order that the tab should appear in on the page
-	Expanded  bool            `json:"expanded"`   // Should the Nav-tree rooted in this node always be expanded one step when loaded?
-	Anchors   []anchor.Anchor `json:"anchors"`    // The list of anchors to headers in the body.
-	Nav       []*Node         `json:"nav,omitempty"`
+type LangLookup map[string]string
+type LangAnchorLookup map[string][]anchor.Anchor
+
+type Page struct {
+	Titles    LangLookup       // Human-readable title.
+	Slug      string           // URL-slug.
+	URL       string           // Actual url?
+	UpdatedAt LangLookup       // Page update time.
+	Image     string           // Path/URL/Placeholder to image.
+	Message   string           // Message to show at top
+	Bodies    LangLookup       // Main content of the page.
+	Sidebars  LangLookup       // The sidebar of the page.
+	Sort      *int             // The order that the tab should appear in on the page
+	Expanded  bool             // Should the Nav-tree rooted in this node always be expanded one step when loaded?
+	Anchors   LangAnchorLookup // The list of anchors to headers in the body.
 }
 
 // Node is a recursive node in a page tree.
@@ -47,13 +49,23 @@ type Node struct {
 
 // Meta defines the attributes to be loaded from the meta.toml file
 type Meta struct {
-	Image     string
-	Title     string
-	Message   string
-	Sort      *int
-	Expanded  bool
-	Sensitive bool
+	Image     string     `toml:"image"`
+	Titles    LangLookup `toml:"title"`
+	Message   string     `toml:"message"`
+	Sort      *int       `toml:"sort"`
+	Expanded  bool       `toml:"expanded"`
+	Sensitive bool       `toml:"sensitive"`
 }
+
+const (
+	metaFile        = "meta.toml"
+	iso8601DateTime = "2006-01-02T15:04:05Z"
+)
+
+var (
+	bodyReg    = regexp.MustCompile("body(_\\w+)\\.md")
+	sidebarReg = regexp.MustCompile("sidebar(_\\w+)\\.md")
+)
 
 // NewNode creates a new node with it's path, slug and page title.
 func NewNode(path, slug, title string) *Node {
@@ -132,9 +144,9 @@ func (n *Node) Num() int {
 }
 
 // Load intializes a root directory and serves all sub-folders.
-func Load(isReception bool, root string) (pages map[string]*Resp, err error) {
+func Load(isReception bool, root string) (map[string]*Page, error) {
 	var dirs []string
-	err = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
+	err := filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
 		// We only search for article directories.
 		if !fi.IsDir() {
 			return nil
@@ -162,8 +174,8 @@ func stripRoot(root string, dir string) string {
 
 // parseDirs parses each directory into a response. Returns a map from requested
 // urls into responses.
-func parseDirs(isReception bool, root string, dirs []string) (pages map[string]*Resp, err error) {
-	pages = map[string]*Resp{}
+func parseDirs(isReception bool, root string, dirs []string) (map[string]*Page, error) {
+	pages := make(map[string]*Page)
 	for _, dir := range dirs {
 		r, err := parseDir(isReception, root, dir)
 		if err != nil {
@@ -207,48 +219,73 @@ func toHTML(isReception bool, filename string) (string, error) {
 }
 
 // parseDir creates a response for a directory.
-func parseDir(isReception bool, root, dir string) (*Resp, error) {
+func parseDir(isReception bool, root, dir string) (*Page, error) {
 	log.WithField("dir", dir).Debug("Parsing directory:")
 
-	// Our content files.
-	var (
-		bodyPath    = filepath.Join(dir, "body.md")
-		sidebarPath = filepath.Join(dir, "sidebar.md")
-		metaPath    = filepath.Join(dir, "meta.toml")
-	)
+	bodies := make(LangLookup)
+	sidebars := make(LangLookup)
+	commitTimes := make(LangLookup)
+	anchorsLists := make(LangAnchorLookup)
 
-	// Parse markdown to HTML.
-	body, err := toHTML(isReception, bodyPath)
-	if err != nil {
-		return nil, err
-	}
-	log.WithField("body", body).Debug("HTML of body.md")
+	entries, err := os.ReadDir(dir)
 
-	// Parse sidebar to HTML.
-	sidebar, err := toHTML(isReception, sidebarPath)
-	if err != nil {
-		return nil, err
-	}
-	log.WithField("sidebar", sidebar).Debug("HTML of sidebar.md")
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
 
-	// Get commit time
-	commitTime, err := getCommitTime(root, bodyPath)
-	if err != nil {
-		return nil, err
-	}
+		entryPath := filepath.Join(dir, entry.Name())
 
-	// Parse anchors in the body.
-	anchs, err := anchor.Anchors(body)
-	if err != nil {
-		return nil, err
+		if match := bodyReg.FindSubmatch([]byte(entry.Name())); match != nil {
+			lang := ""
+			if len(match) > 1 && len(match[1]) > 0 {
+				lang = string(match[1][1:])
+			}
+			bodies[lang], err = toHTML(isReception, entryPath)
+			log.WithField("body", bodies[lang]).Debug("HTML of body_" + lang + ".md")
+
+			if err != nil {
+				return nil, err
+			}
+
+			commitTime, err := getCommitTime(root, entryPath)
+			if err != nil {
+				commitTimes[lang] = time.Now().Format(iso8601DateTime)
+			} else {
+				commitTimes[lang] = commitTime.Format(iso8601DateTime)
+			}
+
+			// Parse anchors in the body.
+			anchorsLists[lang], err = anchor.Anchors(bodies[lang])
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if match := sidebarReg.FindSubmatch([]byte(entry.Name())); match != nil {
+			lang := ""
+			if len(match) > 1 && len(match[1]) > 0 {
+				lang = string(match[1][1:])
+			}
+			sidebars[lang], err = toHTML(isReception, entryPath)
+			log.WithField("sidebar", sidebars[lang]).Debug("HTML of sidebar" + lang + ".md")
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// Parse meta data from a toml file.
+	metaPath := filepath.Join(dir, metaFile)
 	var meta = Meta{
 		Sort:     nil, // all pages without a sort-tag should be after the pages with a sort-tag, but should keep their internal order
 		Expanded: false,
 	}
+	var metaMap = make(map[string]any)
 	if _, err := toml.DecodeFile(metaPath, &meta); err != nil {
+		return nil, err
+	}
+	if _, err := toml.DecodeFile(metaPath, &metaMap); err != nil {
 		return nil, err
 	}
 
@@ -256,16 +293,15 @@ func parseDir(isReception bool, root, dir string) (*Resp, error) {
 		return nil, nil
 	}
 
-	const iso8601DateTime = "2006-01-02T15:04:05Z"
-	return &Resp{
-		Title:     meta.Title,
+	return &Page{
+		Titles:    meta.Titles,
 		Slug:      filepath.Base(stripRoot(root, dir)),
-		UpdatedAt: commitTime.Format(iso8601DateTime),
+		UpdatedAt: commitTimes,
 		Image:     meta.Image,
 		Message:   meta.Message,
-		Body:      body,
-		Sidebar:   sidebar,
-		Anchors:   anchs,
+		Bodies:    bodies,
+		Sidebars:  sidebars,
+		Anchors:   anchorsLists,
 		Expanded:  meta.Expanded,
 		Sort:      meta.Sort,
 	}, nil

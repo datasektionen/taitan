@@ -21,11 +21,19 @@ type Fuzz struct {
 }
 
 // NewFile returns a fuzzyfile.
-func NewFile(resp map[string]*pages.Resp) File {
+func NewFile(resp map[string]*pages.Page) File {
 	fs := make([]Fuzz, 0, 128)
 	for path, r := range resp {
+		title, ok := r.Titles[""]
+		if !ok {
+			for _, title_ := range r.Titles {
+				title = title_
+				break
+			}
+		}
+
 		fs = append(fs, Fuzz{
-			Name: r.Title,
+			Name: title,
 			Str:  r.Slug,
 			Href: fmt.Sprintf("http://datasektionen.se%s", path),
 		})
