@@ -57,6 +57,17 @@ type Meta struct {
 	Sensitive bool
 }
 
+const (
+	metaFile        = "meta.toml"
+	iso8601DateTime = "2006-01-02T15:04:05Z"
+)
+
+var (
+	bodyReg    = regexp.MustCompile("body(_\\w+)\\.md")
+	sidebarReg = regexp.MustCompile("sidebar(_\\w+)\\.md")
+	titleReg   = regexp.MustCompile("Title(_\\w+)")
+)
+
 // NewNode creates a new node with it's path, slug and page title.
 func NewNode(path, slug, title string) *Node {
 	return &Node{path: path, Slug: slug, Title: title, Nav: make([]*Node, 0)}
@@ -211,18 +222,6 @@ func toHTML(isReception bool, filename string) (string, error) {
 // parseDir creates a response for a directory.
 func parseDir(isReception bool, root, dir string) (*Page, error) {
 	log.WithField("dir", dir).Debug("Parsing directory:")
-
-	const (
-		bodyPattern     = "body(_\\w+)\\.md"
-		sidebarPattern  = "sidebar(_\\w+)\\.md"
-		titlePattern    = "Title(_\\w+)"
-		metaFile        = "meta.toml"
-		iso8601DateTime = "2006-01-02T15:04:05Z"
-	)
-
-	bodyReg := regexp.MustCompile(bodyPattern)
-	sidebarReg := regexp.MustCompile(sidebarPattern)
-	titleReg := regexp.MustCompile(titlePattern)
 
 	bodies := make(LangLookup)
 	sidebars := make(LangLookup)
