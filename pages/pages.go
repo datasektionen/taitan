@@ -49,12 +49,12 @@ type Node struct {
 
 // Meta defines the attributes to be loaded from the meta.toml file
 type Meta struct {
-	Image     string
-	Title     string
-	Message   string
-	Sort      *int
-	Expanded  bool
-	Sensitive bool
+	Image     string     `toml:"image"`
+	Titles    LangLookup `toml:"title"`
+	Message   string     `toml:"message"`
+	Sort      *int       `toml:"sort"`
+	Expanded  bool       `toml:"expanded"`
+	Sensitive bool       `toml:"sensitive"`
 }
 
 const (
@@ -65,7 +65,6 @@ const (
 var (
 	bodyReg    = regexp.MustCompile("body(_\\w+)\\.md")
 	sidebarReg = regexp.MustCompile("sidebar(_\\w+)\\.md")
-	titleReg   = regexp.MustCompile("Title(_\\w+)")
 )
 
 // NewNode creates a new node with it's path, slug and page title.
@@ -226,7 +225,6 @@ func parseDir(isReception bool, root, dir string) (*Page, error) {
 	bodies := make(LangLookup)
 	sidebars := make(LangLookup)
 	commitTimes := make(LangLookup)
-	titles := make(LangLookup)
 	anchorsLists := make(LangAnchorLookup)
 
 	entries, err := os.ReadDir(dir)
@@ -294,21 +292,9 @@ func parseDir(isReception bool, root, dir string) (*Page, error) {
 	if meta.Sensitive && isReception {
 		return nil, nil
 	}
-	for k, v := range metaMap {
-		if match := titleReg.FindSubmatch([]byte(k)); match != nil {
-			switch v.(type) {
-			case string:
-				lang := ""
-				if len(match) > 1 && len(match[1]) > 0 {
-					lang = string(match[1][1:])
-				}
-				titles[lang] = v.(string)
-			}
-		}
-	}
 
-		Titles:    titles,
 	return &Page{
+		Titles:    meta.Titles,
 		Slug:      filepath.Base(stripRoot(root, dir)),
 		UpdatedAt: commitTimes,
 		Image:     meta.Image,
