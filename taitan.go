@@ -134,7 +134,7 @@ func setVerbosity() {
 // Atomic responses.
 type Atomic struct {
 	sync.Mutex
-	Resps map[string]*pages.RespStore
+	Resps map[string]*pages.Page
 }
 
 func validRoot(root string) {
@@ -249,7 +249,7 @@ type Resp struct {
 	Nav       []*pages.Node   `json:"nav,omitempty"`
 }
 
-func responseExistForLang(resp *pages.RespStore, lang string) bool {
+func responseExistForLang(resp *pages.Page, lang string) bool {
 	if _, ok := resp.Titles[lang]; !ok {
 		return false
 	}

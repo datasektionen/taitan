@@ -22,8 +22,7 @@ import (
 type LangLookup map[string]string
 type LangAnchorLookup map[string][]anchor.Anchor
 
-// TODO: Better type name
-type RespStore struct {
+type Page struct {
 	Titles    LangLookup       // Human-readable title.
 	Slug      string           // URL-slug.
 	URL       string           // Actual url?
@@ -135,7 +134,7 @@ func (n *Node) Num() int {
 }
 
 // Load intializes a root directory and serves all sub-folders.
-func Load(isReception bool, root string) (map[string]*RespStore, error) {
+func Load(isReception bool, root string) (map[string]*Page, error) {
 	var dirs []string
 	err := filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
 		// We only search for article directories.
@@ -165,8 +164,8 @@ func stripRoot(root string, dir string) string {
 
 // parseDirs parses each directory into a response. Returns a map from requested
 // urls into responses.
-func parseDirs(isReception bool, root string, dirs []string) (map[string]*RespStore, error) {
-	pages := make(map[string]*RespStore)
+func parseDirs(isReception bool, root string, dirs []string) (map[string]*Page, error) {
+	pages := make(map[string]*Page)
 	for _, dir := range dirs {
 		r, err := parseDir(isReception, root, dir)
 		if err != nil {
@@ -210,7 +209,7 @@ func toHTML(isReception bool, filename string) (string, error) {
 }
 
 // parseDir creates a response for a directory.
-func parseDir(isReception bool, root, dir string) (*RespStore, error) {
+func parseDir(isReception bool, root, dir string) (*Page, error) {
 	log.WithField("dir", dir).Debug("Parsing directory:")
 
 	const (
@@ -309,8 +308,8 @@ func parseDir(isReception bool, root, dir string) (*RespStore, error) {
 		}
 	}
 
-	return &RespStore{
 		Titles:    titles,
+	return &Page{
 		Slug:      filepath.Base(stripRoot(root, dir)),
 		UpdatedAt: commitTimes,
 		Image:     meta.Image,

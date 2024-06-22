@@ -21,7 +21,7 @@ type Fuzz struct {
 }
 
 // NewFile returns a fuzzyfile.
-func NewFile(resp map[string]*pages.RespStore) File {
+func NewFile(resp map[string]*pages.Page) File {
 	fs := make([]Fuzz, 0, 128)
 	for path, r := range resp {
 		title, ok := r.Titles[""]
