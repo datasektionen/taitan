@@ -25,7 +25,7 @@ job "taitan" {
       driver = "docker"
 
       config {
-        image = var.image_tag
+        image = var.bawang_image_tag
         ports = ["http"]
       }
 
@@ -70,7 +70,7 @@ ENV
       driver = "docker"
 
       config {
-        image = var.image_tag
+        image = var.styrdokument_image_tag
         ports = ["http"]
       }
 
@@ -92,7 +92,12 @@ ENV
   }
 }
 
-variable "image_tag" {
+variable "bawang_image_tag" {
+  type = string
+  default = "ghcr.io/datasektionen/taitan:latest"
+}
+
+variable "styrdokument_image_tag" {
   type = string
   default = "ghcr.io/datasektionen/taitan:latest"
 }
