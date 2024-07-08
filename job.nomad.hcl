@@ -11,13 +11,13 @@ job "taitan" {
       port     = "http"
       provider = "nomad"
       tags = [
-        "traefik-external.enable=true",
-        "traefik-external.http.routers.taitan-bawang.rule=Host(`taitan.datasektionen.se`)",
-        "traefik-external.http.routers.taitan-bawang.entrypoints=websecure",
-        "traefik-external.http.routers.taitan-bawang.tls.certresolver=default",
+        "traefik.enable=true",
+        "traefik.http.routers.taitan-bawang.rule=Host(`taitan.datasektionen.se`)",
+        "traefik.http.routers.taitan-bawang.tls.certresolver=default",
 
-        "traefik-internal.enable=true",
-        "traefik-internal.http.routers.taitan-bawang.rule=Host(`taitan.nomad.dsekt.internal`)",
+        "traefik.enable=true",
+        "traefik.http.routers.taitan-bawang-internal.rule=Host(`taitan.nomad.dsekt.internal`)",
+        "traefik.http.routers.taitan-bawang-internal.entrypoints=web-internal",
       ]
     }
 
@@ -57,13 +57,13 @@ ENV
       port     = "http"
       provider = "nomad"
       tags = [
-        "traefik-external.enable=true",
-        "traefik-external.http.routers.taitan-styrdokument.rule=Host(`taitan-styrdokument.datasektionen.se`)",
-        "traefik-external.http.routers.taitan-styrdokument.entrypoints=websecure",
-        "traefik-external.http.routers.taitan-styrdokument.tls.certresolver=default",
+        "traefik.enable=true",
+        "traefik.http.routers.taitan-styrdokument.rule=Host(`taitan-styrdokument.datasektionen.se`)",
+        "traefik.http.routers.taitan-styrdokument.tls.certresolver=default",
 
-        "traefik-internal.enable=true",
-        "traefik-internal.http.routers.taitan-styrdokument.rule=Host(`taitan-styrdokument.nomad.dsekt.internal`)",
+        "traefik.enable=true",
+        "traefik.http.routers.taitan-styrdokument-internal.rule=Host(`taitan-styrdokument.nomad.dsekt.internal`)",
+        "traefik.http.routers.taitan-styrdokument-internal.entrypoints=web-internal",
       ]
     }
 
