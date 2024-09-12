@@ -51,5 +51,4 @@ jobs:
           NOMAD_ADDR: ${{ vars.NOMAD_ADDR }}
           NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
         run: |
-          nomad run -var=bawang_image_tag=${{ env.current }} -var=styrdokument_image_tag=ghcr.io/${{ github.repository }}:f1e1398 job.nomad.hcl
-          #                                                                              todo: remove this hardcoded thingie whence styrdokument-bawang is ready for new taitan
+          nomad run -var=bawang_image_tag=${{ env.current }} -var=styrdokument_image_tag=${{ env.current }} job.nomad.hcl
