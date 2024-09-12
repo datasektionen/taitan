@@ -81,6 +81,7 @@ PORT={{ env "NOMAD_PORT_http" }}
 DARKMODE_URL=https://darkmode.datasektionen.se/
 CONTENT_URL=https://github.com/datasektionen/styrdokument.git
 TOKEN={{ with nomadVar "nomad/jobs/taitan" }}{{ .styrdokument_token }}{{ end }}
+DEFAULT_LANG=sv
 ENV
         destination = "local/.env"
         env         = true
