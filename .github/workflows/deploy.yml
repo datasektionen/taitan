@@ -45,6 +45,7 @@ jobs:
           tags: ${{ env.latest }},${{ env.current }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
 
       - name: Deploy to nomad
         env:
