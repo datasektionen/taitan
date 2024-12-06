@@ -15,7 +15,6 @@ job "taitan" {
         "traefik.http.routers.taitan-bawang.rule=Host(`taitan.datasektionen.se`)",
         "traefik.http.routers.taitan-bawang.tls.certresolver=default",
 
-        "traefik.enable=true",
         "traefik.http.routers.taitan-bawang-internal.rule=Host(`taitan.nomad.dsekt.internal`)",
         "traefik.http.routers.taitan-bawang-internal.entrypoints=web-internal",
       ]
