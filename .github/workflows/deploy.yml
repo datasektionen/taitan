@@ -15,3 +15,4 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           nomad-token: ${{ secrets.NOMAD_TOKEN }}
           nomad-addr: ${{ vars.NOMAD_ADDR }}
+          platforms: linux/amd64,linux/arm64 # support M1+ Macs
