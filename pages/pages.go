@@ -41,6 +41,7 @@ type Node struct {
 	path     string
 	Slug     string  `json:"slug"`
 	Title    string  `json:"title"`
+	Image    string  `json:"image"`
 	Active   bool    `json:"active,omitempty"`
 	Expanded bool    `json:"expanded,omitempty"`
 	Sort     *int    `json:"sort,omitempty"`
@@ -92,12 +93,13 @@ func (n *Node) hasNode(path string) bool {
 }
 
 // AddNode adds a node to the node tree.
-func (n *Node) AddNode(root []string, p string, title string, paths []string, active bool, expanded bool, sort *int) {
+func (n *Node) AddNode(root []string, p string, title string, image string, paths []string, active bool, expanded bool, sort *int) {
 	// Yay! Create us!
 	if len(paths) == 0 {
 		n.Active = active
 		n.Expanded = expanded
 		n.Title = title
+		n.Image = image
 		n.Slug = p
 		n.Sort = sort
 		return
@@ -110,14 +112,14 @@ func (n *Node) AddNode(root []string, p string, title string, paths []string, ac
 	if n.hasNode(parent) {
 		if len(root) == 0 {
 			if n.getNode(parent).Expanded {
-				n.getNode(parent).AddNode(root, p, title, paths[1:], false, expanded, sort)
+				n.getNode(parent).AddNode(root, p, title, image, paths[1:], false, expanded, sort)
 			}
 			return
 		}
 		if root[0] == parent || n.getNode(parent).Expanded {
-			n.getNode(parent).AddNode(root[1:], p, title, paths[1:], false, expanded, sort)
+			n.getNode(parent).AddNode(root[1:], p, title, image, paths[1:], false, expanded, sort)
 		} else if len(paths) == 1 {
-			n.getNode(parent).AddNode(root, p, title, []string{}, false, expanded, sort)
+			n.getNode(parent).AddNode(root, p, title, image, []string{}, false, expanded, sort)
 		}
 		return
 	}
@@ -127,6 +129,7 @@ func (n *Node) AddNode(root []string, p string, title string, paths []string, ac
 		root,
 		p,
 		title,
+		image,
 		paths[1:],
 		len(root) == 1 && root[0] == parent,
 		expanded || (len(root) > 1 && root[0] == parent),

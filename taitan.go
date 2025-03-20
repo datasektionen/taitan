@@ -366,6 +366,7 @@ func handler(res http.ResponseWriter, req *http.Request) {
 			strings.FieldsFunc(clean, func(c rune) bool { return c == '/' }),
 			slug,
 			responses.Resps[slug].Titles[lang],
+			responses.Resps[slug].Image,
 			strings.FieldsFunc(slug, func(c rune) bool { return c == '/' }),
 			false,
 			responses.Resps[slug].Expanded,
